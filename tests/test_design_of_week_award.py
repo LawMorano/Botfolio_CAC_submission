@@ -89,7 +89,7 @@ class DesignOfWeekWithdrawalTests(unittest.TestCase):
         body = self._homepage()
         if b"hero__preview" not in body:
             return b""
-        return body[body.index(b"hero__preview"):body.index(b"founding-callout")]
+        return body[body.index(b"hero__preview"):body.index(b"</section>")]
 
     def _rows(self):
         conn = db.connect()

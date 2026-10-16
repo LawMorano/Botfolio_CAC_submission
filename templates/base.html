@@ -135,7 +135,6 @@
     <a href="{{ url_for('tag_directory') }}">Tags</a>
     <a href="{{ url_for('team_list') }}">Teams</a>
     <a href="{{ url_for('learn') }}"{% if request.endpoint and request.endpoint.rpartition('.')[2] in ('learn', 'learn_pathway', 'learn_course') %} aria-current="page"{% endif %}>Learn</a>
-    <a class="topbar__founding" href="{{ url_for('founding_50') }}">Founding 50</a>
   </nav>
   <form class="global-search" action="{{ url_for('site_search') }}" method="get" role="search" data-global-search data-search-endpoint="{{ url_for('global_search_api') }}">
     <label class="sr-only" for="global-search-input">Search Botfolio</label>

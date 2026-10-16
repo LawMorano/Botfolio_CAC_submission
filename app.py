@@ -1990,10 +1990,8 @@ def index():
         """,
         (current_award_week,),
     ).fetchall()
-    founding_claimed = conn.execute("SELECT COUNT(*) n FROM teams WHERE founding_rank IS NOT NULL").fetchone()["n"]
     return render_template("index.html", designs=designs, total=total,
-                           designs_of_week=designs_of_week, hero_slides=hero_slides,
-                           founding_claimed=founding_claimed)
+                           designs_of_week=designs_of_week, hero_slides=hero_slides)
 
 
 @app.route("/founding-50")

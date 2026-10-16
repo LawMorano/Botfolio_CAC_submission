@@ -309,7 +309,7 @@ class PhaseOneCommunityTests(unittest.TestCase):
         script = (root / "static" / "dotw-carousel.js").read_text(encoding="utf-8")
         stylesheet = (root / "static" / "style.css").read_text(encoding="utf-8")
         # The week's designs preview at the top, inside the hero, as a coverflow.
-        hero = home[home.index('<section class="hero">'):home.index("founding-callout")]
+        hero = home[home.index('<section class="hero">'):home.index("</section>")]
         self.assertIn("hero__preview dotw", hero)
         self.assertIn("data-dotw-carousel", hero)
         self.assertIn("for d in hero_slides", hero)
@@ -321,16 +321,17 @@ class PhaseOneCommunityTests(unittest.TestCase):
         self.assertIn("blur(5px)", stylesheet)
         self.assertIn("perspective: 1600px", stylesheet)
 
-    def test_home_layout_features_four_weekly_winners_below_founding_50(self):
+    def test_home_layout_features_four_weekly_winners_without_founding_50_ad(self):
         root = Path(__file__).parents[1]
         home = (root / "templates" / "index.html").read_text(encoding="utf-8")
         base = (root / "templates" / "base.html").read_text(encoding="utf-8")
         source = (root / "app.py").read_text(encoding="utf-8")
-        self.assertLess(home.index("founding-callout"), home.index("home-featured"))
         self.assertLess(home.index("home-featured"), home.index("home-newest"))
         self.assertIn("for d in designs_of_week", home)
         self.assertIn("ORDER BY dw.selected_at DESC LIMIT 4", source)
-        self.assertIn('class="topbar__founding"', base)
+        self.assertNotIn("Founding 50", home)
+        self.assertNotIn('class="topbar__founding"', base)
+        self.assertIn('class="founding-team-badge"', (root / "templates" / "team.html").read_text(encoding="utf-8"))
 
     def test_founding_50_has_premium_gold_treatment_and_first_visit_confetti(self):
         root = Path(__file__).parents[1]

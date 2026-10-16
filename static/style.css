@@ -499,9 +499,6 @@ main.page:has(.auth--login) { max-width: none; padding: 0; }
 }
 .topbar__nav a:hover { color: var(--text); text-decoration: none; }
 .topbar__nav a:hover::after { transform: scaleX(1); }
-.topbar__nav .topbar__founding { color:#f2cb68; font-weight:800; }
-.topbar__nav .topbar__founding:hover { color:#ffe39a; }
-.topbar__nav .topbar__founding::after { background:#e5b84f; }
 
 
 

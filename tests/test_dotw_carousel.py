@@ -72,7 +72,7 @@ class DotwHeroCreditTests(unittest.TestCase):
         self.assertEqual(home.status_code, 200)
         body = home.data
         start = body.index(b'hero__preview')
-        end = body.index(b'founding-callout')
+        end = body.index(b'</section>')
         return body[start:end]
 
     def test_admin_upload_without_a_team_hides_the_admin_account(self):
