@@ -80,6 +80,9 @@ def main():
 
         account = pwd.getpwnam("botfolio")
         _own_volume(data_dir, account.pw_uid, account.pw_gid)
+        os.environ["HOME"] = account.pw_dir
+        os.environ["USER"] = account.pw_name
+        os.environ["LOGNAME"] = account.pw_name
         os.initgroups(account.pw_name, account.pw_gid)
         os.setgid(account.pw_gid)
         os.setuid(account.pw_uid)
