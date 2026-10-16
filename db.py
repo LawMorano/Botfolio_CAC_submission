@@ -15,6 +15,7 @@ read as `row["title"]`.
 
 import importlib
 import logging
+import os
 import sqlite3
 from pathlib import Path
 
@@ -32,7 +33,7 @@ for _driver in ("psycopg", "psycopg2"):
         pass  # Not installed here, so nothing in this process can raise it.
 
 BASE_DIR = Path(__file__).resolve().parent
-DB_PATH = BASE_DIR / "designhub.db"
+DB_PATH = Path(os.environ.get("BOTFOLIO_DATA_DIR") or BASE_DIR) / "designhub.db"
 SCHEMA_PATH = BASE_DIR / "schema.sql"
 
 

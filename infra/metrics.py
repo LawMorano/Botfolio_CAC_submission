@@ -156,6 +156,8 @@ def readyz():
     ok = True
 
     try:
+        if not db.db_is_initialized():
+            raise RuntimeError("database schema is not initialized")
         conn = db.get_db()
         conn.execute("SELECT 1").fetchone()
         checks["database"] = "ok"

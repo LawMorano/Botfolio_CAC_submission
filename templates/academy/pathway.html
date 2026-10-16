@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}{{ pathway.name }} pathway — CAD Academy — Botfolio{% endblock %}
+{% block meta_description %}Explore the {{ pathway.name }} CAD pathway and the shared FTC drivetrain course at Botfolio CAD Academy.{% endblock %}
+{% block page_class %}academy{% endblock %}
+{% block content %}
+<nav class="academy__crumbs" aria-label="Breadcrumb"><a href="{{ url_for('learn') }}">CAD Academy</a><span aria-hidden="true">/</span><span aria-current="page">{{ pathway.name }}</span></nav>
+<header class="academy__hero academy__hero--path">
+  <img class="academy__logo" src="{{ url_for('static', filename=pathway.logo) }}" alt="{{ pathway.name }} logo">
+  <p class="eyebrow">CAD pathway</p>
+  <h1>{{ pathway.name }}</h1>
+  <p class="academy__lead">{{ pathway.description }}</p>
+  <p>Follow the ordered foundations, then apply them in shared FTC mechanism courses.</p>
+  <p><a href="{{ url_for('learn_pathway', platform=pathway.other) }}">Explore the {{ other.name }} pathway</a> — your transferable CAD skills carry over.</p>
+</header>
+
+<section class="academy__section" aria-labelledby="roadmap-title">
+  <div class="section-head"><h2 id="roadmap-title">{{ pathway.name }} roadmap</h2></div>
+  <ol class="academy__roadmap">
+    {% for course in courses %}
+    <li>{% include "academy/_course_card.html" %}</li>
+    {% endfor %}
+  </ol>
+</section>
+{% endblock %}

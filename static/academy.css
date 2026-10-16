@@ -1,0 +1,61 @@
+/* CAD Academy uses the site's theme tokens and works without scripts. */
+.academy { max-width: 1220px; }
+.academy__crumbs { display:flex; flex-wrap:wrap; gap:.55rem; margin-bottom:1.5rem; color:var(--text-dim); font-size:.9rem; }
+.academy__hero { padding:clamp(1.5rem,4vw,3rem); border:1px solid var(--border); border-radius:var(--radius); background:var(--panel); }
+.academy__hero h1 { font-size:clamp(2.1rem,5vw,3.6rem); }
+.academy__hero p:last-child { margin-bottom:0; }
+.academy__hero--path .academy__logo { float:right; margin:0 0 1rem 1rem; }
+.academy__lead { max-width:760px; font-size:clamp(1.12rem,2.1vw,1.4rem); color:var(--text); }
+.academy__actions { display:flex; flex-wrap:wrap; gap:.75rem; margin-top:1.5rem; }
+.academy__section { margin-top:2.5rem; }
+.academy__section > p { max-width:76ch; }
+.academy__grid { display:grid; gap:1rem; }
+.academy__grid--two { grid-template-columns:repeat(2,minmax(0,1fr)); }
+.academy__card { min-width:0; padding:1.4rem; border:1px solid var(--border); border-radius:var(--radius); background:var(--bg-raised); }
+.academy__card > :last-child { margin-bottom:0; }
+.academy__logo { display:block; max-width:170px; max-height:50px; width:auto; height:auto; object-fit:contain; object-position:left; margin-bottom:1rem; }
+.academy__note { color:var(--text-dim); }
+.academy__levels,.academy__rhythm { display:grid; gap:.75rem; padding-left:1.5rem; }
+.academy__levels { grid-template-columns:repeat(5,minmax(0,1fr)); }
+.academy__levels li,.academy__rhythm li { padding:.7rem; }
+.academy__levels li { border-bottom:2px solid var(--accent); font-weight:700; }
+.academy__rhythm { grid-template-columns:repeat(5,minmax(0,1fr)); }
+.academy__roadmap,.academy__lesson-list { list-style:none; display:grid; gap:1rem; padding:0; }
+.academy__roadmap { grid-template-columns:repeat(2,minmax(0,1fr)); counter-reset:academy-roadmap; }
+.academy__roadmap > li { min-width:0; counter-increment:academy-roadmap; }
+.academy__roadmap > li::before { content:'Step ' counter(academy-roadmap); display:block; margin:0 0 .35rem .15rem; color:var(--text-dim); font-size:.85rem; font-weight:700; }
+.academy__roadmap > li:nth-child(n+5) { grid-column:1/-1; }
+.academy__card-top { display:flex; flex-wrap:wrap; justify-content:space-between; gap:.5rem; margin-bottom:.6rem; color:var(--text-dim); font-size:.85rem; }
+.academy__status { display:inline-block; padding:.15rem .6rem; border:1px solid currentColor; border-radius:999px; font-size:.78rem; font-weight:800; vertical-align:middle; }
+.academy__status--live { color:var(--good); }
+.academy__status--planned { color:var(--text-dim); }
+.academy__facts { display:grid; gap:.55rem; margin:1rem 0; }
+.academy__facts div { display:flex; flex-wrap:wrap; gap:.4rem; }
+.academy__facts dt { min-width:6.5rem; color:var(--text-dim); }
+.academy__facts dd { margin:0; font-weight:600; }
+.academy__facts--hero { grid-template-columns:repeat(2,minmax(0,1fr)); }
+.academy__facts--hero div { display:block; }
+.academy__facts--hero dt { margin-bottom:.1rem; }
+.academy__unavailable { margin:1rem 0 0; color:var(--text-dim); font-weight:700; }
+.academy__resource-note { padding:.75rem 1rem; border:1px dashed var(--border-strong); border-radius:8px; color:var(--text-dim); }
+.academy__edition { display:flex; flex-wrap:wrap; align-items:center; gap:.7rem; margin:1.2rem 0; }
+.academy__edition strong { margin-right:.35rem; }
+.academy__edition a { padding:.45rem .8rem; border:1px solid var(--border-strong); border-radius:999px; color:var(--text); }
+.academy__edition a[aria-current] { border-color:var(--accent); color:var(--accent); }
+.academy__course-layout { display:grid; grid-template-columns:minmax(210px, .28fr) minmax(0,1fr); align-items:start; gap:1.3rem; }
+.academy__toc { position:sticky; top:6rem; }
+.academy__toc h2 { font-size:1.05rem; }
+.academy__toc ol { padding-left:1.25rem; }
+.academy__toc li { margin:.6rem 0; }
+.academy__course-body .academy__section:first-child { margin-top:0; }
+.academy__lesson { scroll-margin-top:6rem; }
+.academy__lesson h3 { font-size:1.2rem; }
+.academy__callout { margin-top:1rem; padding:.8rem 1rem; border-left:3px solid var(--accent); background:var(--bg-input); }
+.academy__callout--debug { border-left-color:var(--text-dim); }
+.academy__callout p { margin:.2rem 0 0; }
+.academy__rubric div { padding:.65rem 0; border-bottom:1px solid var(--border); }
+.academy__rubric dt { font-weight:700; }
+.academy__rubric dd { margin:.15rem 0 0; color:var(--text-dim); }
+.academy a:focus-visible { outline:3px solid var(--accent); outline-offset:3px; }
+@media (max-width:800px) { .academy__levels,.academy__rhythm { grid-template-columns:repeat(2,minmax(0,1fr)); } .academy__course-layout { grid-template-columns:1fr; } .academy__toc { position:static; } }
+@media (max-width:600px) { .academy__grid--two,.academy__roadmap,.academy__facts--hero { grid-template-columns:1fr; } .academy__roadmap > li:nth-child(n+5) { grid-column:auto; } .academy__hero--path .academy__logo { float:none; } }

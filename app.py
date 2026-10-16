@@ -135,6 +135,7 @@ FOUNDING_TEAM_LIMIT = 50
 FOUNDING_CONTRIBUTOR_LIMIT = 100
 
 SITE_SEARCH_PAGES = [
+    ("CAD Academy", "learn", "learn courses onshape fusion 360 ftc drivetrain cad academy"),
     ("Gallery", "gallery", "designs cad robots mechanisms browse"),
     ("Teams", "team_list", "robotics teams directory"),
     ("Founding 50", "founding_50", "founding teams first 50 history"),
@@ -1268,6 +1269,7 @@ def require_account_setup():
             and endpoint not in {
                 "account_setup", "account_setup_interests", "account_setup_role",
                 "account_setup_team", "terms", "logout", "static",
+                "learn", "learn_pathway", "learn_course",
             }):
         return redirect(url_for("account_setup"))
 
@@ -1279,6 +1281,10 @@ _last_ai_chat_purge = 0.0
 def purge_expired_ai_chats_periodically():
     """Enforce the three-day window even if the daily maintenance job is late."""
     global _last_ai_chat_purge
+    # Liveness must not depend on schema or database availability. Railway
+    # calls this before the first normal request on a fresh container.
+    if request.endpoint in {"infra_metrics.healthz", "infra_metrics.readyz"}:
+        return None
     now = time.monotonic()
     if app.testing or now - _last_ai_chat_purge < 3600:
         return None
@@ -2064,9 +2070,16 @@ def sitemap():
         pages.append({"loc": url_for(endpoint, _external=True, **values),
                       "lastmod": (lastmod or "")[:10] or None})
 
-    for endpoint in ("index", "gallery", "tag_directory", "team_list", "about",
+    for endpoint in ("index", "gallery", "tag_directory", "team_list", "about", "learn",
                      "terms", "privacy", "community_rules", "copyright_policy"):
         add(endpoint)
+
+    from academy.catalog import CATALOG
+    for platform, courses in CATALOG.items():
+        add("learn_pathway", platform=platform)
+        for course in courses:
+            if course["status"] == "Live":
+                add("learn_course", platform=platform, course_slug=course["slug"])
 
     for row in conn.execute(
         "SELECT id, updated_at FROM designs "
@@ -4129,6 +4142,10 @@ register_blueprint_compat(app, designs_bp)
 from routes.engineering import engineering_bp
 
 register_blueprint_compat(app, engineering_bp)
+
+from routes.academy import academy_bp
+
+register_blueprint_compat(app, academy_bp)
 
 
 @app.route("/designs/<int:design_id>/delete", methods=["POST"])

@@ -56,6 +56,11 @@ def main():
     checks = [
         ("/", 200),
         ("/about", 200),
+        ("/learn", 200),
+        ("/learn/onshape", 200),
+        ("/learn/fusion-360", 200),
+        ("/learn/onshape/parallel-plate-drivetrain", 200),
+        ("/learn/fusion-360/parallel-plate-drivetrain", 200),
         ("/terms", 200),
         ("/contact", 200),
         ("/gallery", 200),

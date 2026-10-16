@@ -1,0 +1,16 @@
+<article class="academy__card academy__course-card">
+  <div class="academy__card-top"><span class="academy__status academy__status--{{ course.status|lower }}">{{ course.status }}</span><span>{{ course.level }}</span></div>
+  <h3>{{ course.title }}</h3>
+  <p>{{ course.summary }}</p>
+  <dl class="academy__facts">
+    <div><dt>Time</dt><dd>{{ course.duration_minutes }} min</dd></div>
+    <div><dt>Difficulty</dt><dd>{{ course.difficulty }}</dd></div>
+    <div><dt>Skills</dt><dd>{{ course.skills|join(', ') }}</dd></div>
+    <div><dt>Prerequisites</dt><dd>{{ course.prerequisites|join(', ') if course.prerequisites else 'None' }}</dd></div>
+  </dl>
+  {% if course.status == 'Live' %}
+    <a class="btn btn--primary" href="{{ url_for('learn_course', platform=platform, course_slug=course.slug) }}">Open {{ course.title }}</a>
+  {% else %}
+    <p class="academy__unavailable">Coming next · Course content is planned</p>
+  {% endif %}
+</article>

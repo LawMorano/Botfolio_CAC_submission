@@ -25,9 +25,8 @@ RUN pip install --no-cache-dir -r requirements-deploy.txt
 
 COPY . .
 
-# Run as a non-root user. If the application is ever compromised, this is the
-# difference between an attacker having the app's permissions and having the
-# container's.
+# Normally run as a non-root user. Railway sets RAILWAY_RUN_UID=0 only for
+# volume preparation; production_boot.py drops back to botfolio before serving.
 RUN useradd --create-home --uid 10001 botfolio \
     && mkdir -p /app/static/uploads /app/static/models \
     && chown -R botfolio:botfolio /app
@@ -55,4 +54,4 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
 #   --timeout 300       a 350 MB model upload over a school connection takes
 #                       minutes; the 30-second default kills it mid-transfer.
 #   --access-logfile -  to stdout, where the platform collects it.
-CMD ["sh", "-c", "gunicorn --bind 0.0.0.0:${PORT:-8080} --workers 2 --threads 4 --timeout 300 --graceful-timeout 30 --access-logfile - --error-logfile - 'app:app'"]
+CMD ["python", "production_boot.py"]

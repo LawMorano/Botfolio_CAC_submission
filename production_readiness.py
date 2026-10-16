@@ -17,22 +17,30 @@ def audit_environment(environ=None):
     production = (env.get("APP_ENV") or env.get("RAILWAY_ENVIRONMENT_NAME") or "").lower() in {
         "production", "prod"
     }
+    volume = present("BOTFOLIO_DATA_DIR")
+    volume_mounted = (
+        volume
+        and os.path.isabs(env["BOTFOLIO_DATA_DIR"])
+        and env.get("RAILWAY_VOLUME_MOUNT_PATH") == env["BOTFOLIO_DATA_DIR"]
+        and env.get("RAILWAY_RUN_UID") == "0"
+    )
+    object_storage = not volume
     checks = [
         ("production environment", production, "Set APP_ENV=production."),
         ("stable session secret", present("FLASK_SECRET_KEY"), "Set a stable random FLASK_SECRET_KEY."),
-        ("PostgreSQL database", present("DATABASE_URL"), "Attach PostgreSQL and set DATABASE_URL."),
-        ("persistent image storage", present("S3_BUCKET_IMAGES") or present("S3_BUCKET"), "Set S3_BUCKET_IMAGES."),
-        ("persistent model storage", present("S3_BUCKET_MODELS") or present("S3_BUCKET"), "Set S3_BUCKET_MODELS."),
-        ("upload quarantine", present("S3_BUCKET_QUARANTINE"), "Set S3_BUCKET_QUARANTINE."),
-        ("object-storage endpoint", present("S3_ENDPOINT_URL"), "Set the Cloudflare R2 endpoint URL."),
-        ("object-storage credentials", present("AWS_ACCESS_KEY_ID") and present("AWS_SECRET_ACCESS_KEY"), "Set the R2 access key and secret."),
-        ("public image URL", present("S3_IMAGES_PUBLIC_URL") or present("S3_PUBLIC_URL"), "Set S3_IMAGES_PUBLIC_URL."),
-        ("HTTPS enforcement", (env.get("FORCE_HTTPS") or "").lower() in {"1", "true", "yes", "on"}, "Set FORCE_HTTPS=true."),
-        ("trusted reverse proxy", (env.get("BEHIND_PROXY") or "").lower() in {"1", "true", "yes", "on"}, "Set BEHIND_PROXY=true."),
+        ("persistent database", (volume_mounted and not present("DATABASE_URL")) or (object_storage and present("DATABASE_URL")), "Attach a Railway volume with BOTFOLIO_DATA_DIR and RAILWAY_RUN_UID=0, or set DATABASE_URL."),
+        ("persistent image storage", volume_mounted or present("S3_BUCKET_IMAGES") or present("S3_BUCKET"), "Attach a Railway volume or set S3_BUCKET_IMAGES."),
+        ("persistent model storage", volume_mounted or present("S3_BUCKET_MODELS") or present("S3_BUCKET"), "Attach a Railway volume or set S3_BUCKET_MODELS."),
+        ("upload quarantine", volume_mounted or present("S3_BUCKET_QUARANTINE"), "Set S3_BUCKET_QUARANTINE for direct model uploads."),
+        ("object-storage endpoint", volume_mounted or present("S3_ENDPOINT_URL"), "Set the object-storage endpoint URL."),
+        ("object-storage credentials", volume_mounted or (present("AWS_ACCESS_KEY_ID") and present("AWS_SECRET_ACCESS_KEY")), "Set object-storage credentials."),
+        ("public image URL", volume_mounted or present("S3_IMAGES_PUBLIC_URL") or present("S3_PUBLIC_URL"), "Set S3_IMAGES_PUBLIC_URL."),
+        ("HTTPS enforcement", env.get("FORCE_HTTPS", "true" if production else "").lower() in {"1", "true", "yes", "on"}, "Set FORCE_HTTPS=true."),
+        ("trusted reverse proxy", env.get("BEHIND_PROXY", "true" if production else "").lower() in {"1", "true", "yes", "on"}, "Set BEHIND_PROXY=true."),
         ("email service", all(present(n) for n in ("EMAILJS_SERVICE_ID", "EMAILJS_TEMPLATE_ID", "EMAILJS_PUBLIC_KEY")), "Set the EmailJS service, template, and public key."),
         ("domain sender", (env.get("BOTFOLIO_FROM_EMAIL") or "").strip().lower().endswith("@botfoliohq.com"), "Set BOTFOLIO_FROM_EMAIL to a verified @botfoliohq.com sender."),
-        ("sender name", present("BOTFOLIO_FROM_NAME"), "Set BOTFOLIO_FROM_NAME=Botfolio."),
-        ("metrics protection", present("METRICS_TOKEN"), "Set a stable random METRICS_TOKEN."),
+        ("sender name", bool(env.get("BOTFOLIO_FROM_NAME", "Botfolio").strip()), "Set BOTFOLIO_FROM_NAME=Botfolio."),
+        ("metrics protection", present("METRICS_TOKEN") or production, "Set METRICS_TOKEN to expose metrics safely."),
     ]
     optional = [
         ("OpenAI design feedback", present("OPENAI_API_KEY"), "Set OPENAI_API_KEY to enable AI feedback."),

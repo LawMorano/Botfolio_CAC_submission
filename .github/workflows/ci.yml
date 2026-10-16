@@ -38,7 +38,7 @@ jobs:
       - name: Byte-compile everything
         # Catches syntax errors in files no test happens to import. Cheap, and
         # it fails in seconds rather than at start-up in production.
-        run: python -m compileall -q app.py db.py seed.py config.py infra tools
+        run: python -m compileall -q app.py db.py seed.py config.py infra academy routes tests tools
 
       - name: Build the database
         run: python seed.py
