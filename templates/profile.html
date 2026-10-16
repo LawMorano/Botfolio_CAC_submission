@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+{% block title %}{{ user['username'] }}'s Robotics Profile &mdash; Botfolio{% endblock %}
+{% block content %}
+<header class="profile-hero">
+  <div class="profile-hero__identity">
+    {% if user['profile_image'] %}<img class="profile-avatar profile-avatar--large" src="{{ asset_url('uploads', user['profile_image']) }}" alt="{{ user['username'] }} profile image">{% else %}<div class="profile-avatar profile-avatar--large profile-avatar--fallback" aria-hidden="true">{{ user['username'][0]|upper }}</div>{% endif %}
+    <div><p class="eyebrow">Robotics Profile</p><h1>{{ user['display_name'] or user['username'] }} {% with role=user['ftc_role'], admin=user['is_admin'] %}{% include '_role_badge.html' %}{% endwith %}</h1>{% if user['display_name'] %}<p class="sub">@{{ user['username'] }}</p>{% endif %}
+      {% if user['founding_contributor_rank'] %}<span class="founding-team-badge">Founding Contributor #{{ '%03d'|format(user['founding_contributor_rank']) }}</span>{% endif %}
+      {% if user['tagline'] %}<p class="profile-tagline">{{ user['tagline'] }}</p>{% endif %}
+      {% if user['ftc_team_number'] %}<p class="sub">FTC Team <a href="{{ url_for('team_detail', program='ftc', number=user['ftc_team_number']) }}">{{ user['ftc_team_number'] }}</a></p>{% endif %}
+      <p class="sub">Joined {{ user['created_at'][:10] }}{% if user['location'] %} &middot; {{ user['location'] }}{% endif %}</p>
+    </div>
+  </div>
+  <div class="profile-hero__controls">
+    <div class="profile-hero__actions">
+      {% if can_edit %}<a class="btn btn--primary" href="{{ url_for('edit_profile', username=user['username']) }}">Edit profile</a>{% endif %}
+      <a class="btn btn--quiet" href="{{ url_for('report_content', type='profile', id=user['id'], url=request.url) }}">Report profile</a>
+    </div>
+    {% if current_user and current_user['is_admin'] and current_user['id'] != user['id'] %}
+      <details class="admin-moderation">
+        <summary><span class="role-badge role-badge--admin" aria-hidden="true">A</span> Moderate account</summary>
+        <form method="post" action="{{ url_for('moderate_user', username=user['username']) }}" class="admin-moderation__form">
+          <label for="moderation-reason-{{ user['id'] }}">Reason <span>required and saved to the audit log</span></label>
+          <textarea id="moderation-reason-{{ user['id'] }}" name="reason" maxlength="500" rows="3" placeholder="Briefly describe the policy issue or action taken" required></textarea>
+          {% if user['suspended_at'] and user['suspended_until'] and not user['banned_at'] %}<p class="note">Suspended until {{ user['suspended_until'] }} UTC.</p>{% endif %}
+          {% if not user['suspended_at'] and not user['banned_at'] %}
+            <label for="suspension-duration-{{ user['id'] }}">Suspension length</label>
+            <select id="suspension-duration-{{ user['id'] }}" name="suspension_duration">
+              <option value="1_hour">1 hour</option>
+              <option value="24_hours">24 hours</option>
+              <option value="3_days">3 days</option>
+              <option value="7_days" selected>7 days</option>
+              <option value="14_days">14 days</option>
+              <option value="30_days">30 days</option>
+            </select>
+          {% endif %}
+          <div class="admin-moderation__actions">
+            <button class="btn btn--quiet" name="action" value="warn" type="submit">Send warning</button>
+            {% if user['suspended_at'] or user['banned_at'] %}
+              <button class="btn btn--primary" name="action" value="restore" type="submit">Restore access</button>
+            {% else %}
+              <button class="btn btn--danger" name="action" value="suspend" type="submit">Suspend</button>
+              <button class="btn btn--danger btn--danger-outline" name="action" value="ban" type="submit" onclick="return confirm('Ban this account? The user will lose access until an administrator restores it.')">Ban permanently</button>
+            {% endif %}
+          </div>
+          <p class="admin-moderation__help"><strong>Warning</strong> emails the user. <strong>Suspend</strong> blocks access for the selected time. <strong>Ban</strong> blocks access until restored. Restriction and restoration actions also email the user.</p>
+        </form>
+      </details>
+      <details class="admin-moderation">
+        <summary><span class="role-badge role-badge--admin" aria-hidden="true">A</span> Convert to a team page</summary>
+        <p class="admin-moderation__help">Use this when a personal profile is really a robotics team. It creates a team page owned by @{{ user['username'] }} and moves the team-looking content onto it. Design authorship is preserved.</p>
+        <div class="convert-preview">
+          <p><strong>Preview &mdash; what moves to the team:</strong></p>
+          <ul>
+            <li>Profile photo &rarr; team logo{% if not user['profile_image'] %} <em>(none set)</em>{% endif %}</li>
+            <li>About &rarr; team biography{% if not user['bio'] %} <em>(empty)</em>{% endif %}</li>
+            <li>Website &amp; social links &rarr; copied to the team</li>
+            <li>{{ authored_design_count }} design{{ '' if authored_design_count == 1 else 's' }} re-credited to the team &mdash; author attribution preserved</li>
+          </ul>
+        </div>
+        <form method="post" action="{{ url_for('convert_profile_to_team', username=user['username']) }}" class="admin-moderation__form"
+              onsubmit="return confirm('Create a team page from this profile? This re-credits {{ authored_design_count }} design(s) to the team and cannot be automatically undone.')">
+          <label for="convert-number-{{ user['id'] }}">Team number</label>
+          <input id="convert-number-{{ user['id'] }}" name="number" type="number" min="1" placeholder="e.g. 12345" required>
+          <label for="convert-name-{{ user['id'] }}">Team name</label>
+          <input id="convert-name-{{ user['id'] }}" name="name" maxlength="80" value="{{ user['display_name'] or user['username'] }}" required>
+          <label for="convert-reason-{{ user['id'] }}">Reason <span>required and saved to the audit log</span></label>
+          <textarea id="convert-reason-{{ user['id'] }}" name="reason" maxlength="500" rows="3" placeholder="Why this profile is being converted or its team info moved" required></textarea>
+          <div class="admin-moderation__actions">
+            <button class="btn btn--primary" name="mode" value="convert" type="submit">Convert this personal profile into a team page</button>
+            <button class="btn btn--quiet" name="mode" value="move" type="submit">Move team information to a new team page</button>
+          </div>
+          <p class="admin-moderation__help"><strong>Convert</strong> also clears the moved team info from the personal profile. <strong>Move</strong> leaves the personal profile as it is. Both preserve design authorship and links.</p>
+        </form>
+      </details>
+    {% endif %}
+  </div>
+</header>
+
+<nav class="profile-tabs" aria-label="Profile sections">
+  <a href="#overview">Overview</a><a href="#designs">Contributions <span>{{ stats['design_count'] }}</span></a>{% if is_own_profile %}<a href="{{ url_for('library') }}">My Library</a><a href="#ai-chats">AI Chats <span>{{ saved_ai_chats|length }}</span></a>{% endif %}<a href="#comments">Discussion</a><a href="#teams">Teams</a>
+</nav>
+
+<section id="overview" class="profile-layout">
+  <div>
+    {% if featured %}<div class="section-head"><h2>Featured designs</h2><span class="sub">Selected by {{ user['username'] }}</span></div><div class="grid">{% for d in featured %}{% include "_design_card.html" %}{% endfor %}</div>{% endif %}
+    <section id="designs" class="profile-section"><div class="section-head"><h2>Contributions</h2><span class="sub">Uploaded or credited</span></div>
+      {% if designs %}
+        <div class="grid">{% for d in designs[:9] %}{% include "_design_card.html" %}{% endfor %}</div>
+        {% if designs|length > 9 %}<details class="profile-designs-more">
+          <summary>See all <span aria-hidden="true">&rarr;</span></summary>
+          <div class="grid">{% for d in designs[9:] %}{% include "_design_card.html" %}{% endfor %}</div>
+        </details>{% endif %}
+      {% else %}<p class="empty">No designs yet.{% if can_edit %} <a href="{{ url_for('submit') }}">Share your first one.</a>{% endif %}</p>{% endif %}
+    </section>
+    {% if is_own_profile %}<section id="ai-chats" class="profile-section"><div class="section-head"><h2>Saved AI Chats</h2><span class="sub">Private to you</span></div>
+      {% if saved_ai_chats %}<div class="stack">{% for chat in saved_ai_chats %}<article class="panel">
+        <p class="eyebrow"><a href="{{ url_for('design_detail', design_id=chat['design_id']) }}#feedback">{{ chat['design_title'] }}</a> &middot; saved {{ chat['saved_at'][:10] }}</p>
+        {% if chat['question'] %}<h3>Your question</h3><p>{{ chat['question'] }}</p>{% endif %}
+        {% if chat['rubric'].get('answer') %}<h3>Botfolio AI</h3><p>{{ chat['rubric']['answer'] }}</p>{% else %}<p>{{ chat['summary'] }}</p>{% endif %}
+        <details><summary>View full saved review</summary>{% for heading, key in [('Strengths', 'strengths'), ('Concerns', 'concerns'), ('Suggestions', 'suggestions')] %}{% if chat['rubric'].get(key) %}<h3>{{ heading }}</h3><ul class="bullets">{% for item in chat['rubric'][key] %}<li>{{ item }}</li>{% endfor %}</ul>{% endif %}{% endfor %}</details>
+        <form method="post" action="{{ url_for('toggle_ai_chat_saved', feedback_id=chat['id']) }}"><input type="hidden" name="next" value="profile"><button class="btn btn--quiet" type="submit">Remove from saved chats</button></form>
+      </article>{% endfor %}</div>{% else %}<p class="empty">Save an AI chat from a design page to keep it here. Unsaved chats are deleted after three days.</p>{% endif %}
+    </section>{% endif %}
+    <section id="comments" class="profile-section"><h2>Recent community feedback</h2>
+      {% if recent_comments %}<ul class="activity-list">{% for comment in recent_comments %}<li><a href="{{ url_for('design_detail', design_id=comment['design_id']) }}#comment-{{ comment['id'] }}">{{ comment['design_title'] }}</a><p>{{ comment['body']|truncate(180) }}</p><span>{{ comment['created_at'] }}</span></li>{% endfor %}</ul>{% else %}<p class="empty">No community feedback yet.</p>{% endif %}
+    </section>
+  </div>
+  <aside class="profile-sidebar">
+    <section class="panel"><h2>About</h2>{% if user['bio'] %}<p class="detail__description">{{ user['bio'] }}</p>{% else %}<p class="sub">Nothing here yet.{% if can_edit %} Add a short bio to tell the community what you work on.{% endif %}</p>{% endif %}</section>
+    {% if specialties %}<section class="panel"><h2>Skills &amp; interests</h2><div class="chips">{% for item in specialties %}<span class="chip chip--accent">{{ item }}</span>{% endfor %}</div></section>{% endif %}
+    {% if cad_tools %}<section class="panel"><h2>CAD tools</h2><div class="chips">{% for item in cad_tools %}<span class="chip">{{ item }}</span>{% endfor %}</div></section>{% endif %}
+    {% if user['website_url'] or social_links %}<section class="panel"><h2>Links</h2><div class="team-links">{% if user['website_url'] %}<a href="{{ user['website_url'] }}" target="_blank" rel="noopener noreferrer">Website</a>{% endif %}{% for label, link in social_links.items() %}<a href="{{ link }}" target="_blank" rel="noopener noreferrer">{{ label|title }}</a>{% endfor %}</div></section>{% endif %}
+    <section class="panel"><h2>Profile statistics</h2><dl class="stat-list"><div><dt>Design Contributions</dt><dd>{{ stats['design_count'] }}</dd></div><div><dt>Helpful Answers</dt><dd>{{ stats['helpful_answers'] }}</dd></div><div><dt>Saved Designs</dt><dd>{{ stats['saved_count'] }}</dd></div></dl></section>
+    <section class="panel" id="teams"><h2>Teams</h2>{% if teams %}<ul class="team-membership-list">{% for t in teams %}<li><a href="{{ url_for('team_detail', program=t['program'], number=t['number']) }}">{{ t['program']|upper }} Team {{ t['number'] }} &mdash; {{ t['name'] }}</a>{% if t['role'] == 'owner' %}<span class="chip chip--accent">owner</span>{% endif %}</li>{% endfor %}</ul>{% else %}<p class="sub">Unaffiliated{% if can_edit %} &middot; <a href="{{ url_for('team_list') }}">Find or create your team</a>{% endif %}</p>{% endif %}</section>
+  </aside>
+</section>
+{% endblock %}

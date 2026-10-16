@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block title %}Account settings &mdash; Botfolio{% endblock %}
+{% block content %}
+{# An account created through Google has no password anyone holds, so every #}
+{# control that asks for one has to offer a way to set one first. Written as #}
+{# == 'google' rather than != 'password' so that a row predating the column #}
+{# falls through to the ordinary password interface instead of the fallback. #}
+{% set google_only = current_user['auth_provider'] == 'google' %}
+<p class="eyebrow">Account</p>
+<h1>Account settings</h1>
+<section class="panel narrow stack">
+  <h2>Profile and security</h2>
+  <p><a class="btn btn--quiet" href="{{ url_for('edit_profile', username=current_user['username']) }}">Edit profile</a></p>
+  <div class="account-setting">
+    <div><h3>Email address</h3><p class="sub">Currently {{ current_user['email'] }}{% if not current_user['email_verified_at'] %} &middot; Verification required{% endif %}</p></div>
+    {% if google_only %}
+      <div class="stack">
+        <p class="note">Changing your email address needs your Botfolio password, and this account signs in with Google instead. Set a password below and you can change it here.</p>
+      </div>
+    {% else %}
+      <form method="post" action="{{ url_for('change_email') }}" class="stack account-email-form">
+        <label>New email address<input name="email" type="email" maxlength="254" autocomplete="email" required></label>
+        <label>Current password<input name="password" type="password" autocomplete="current-password" required></label>
+        <p class="note">Changing your email signs future messages over to the new address. You must verify it before uploading or commenting.</p>
+        <button class="btn btn--primary" type="submit">Change email</button>
+      </form>
+    {% endif %}
+  </div>
+  <div class="account-setting">
+    {% if google_only %}
+      <div><h3>Password</h3><p class="sub">No password set &middot; you sign in with Google.</p></div>
+      <form method="post" action="{{ url_for('forgot_password') }}" class="stack">
+        <input type="hidden" name="email" value="{{ current_user['email'] }}">
+        <p class="note">A password is optional, but it lets you change your email address, delete your account, and sign in if Google is ever unavailable.</p>
+        <button class="btn btn--quiet" type="submit">Email me a link to set a password</button>
+      </form>
+    {% else %}
+      <div><h3>Password</h3><p class="sub">Use a secure email link to choose a new password.</p></div>
+      <p><a class="btn btn--quiet" href="{{ url_for('forgot_password') }}">Change password</a></p>
+    {% endif %}
+  </div>
+{# Connecting is gated on the feature flag; disconnecting is not. Switching #}
+{# Google off must not strand the accounts it was already connected to with  #}
+{# no way to take it back off again -- which is why google_unlink itself is  #}
+{# exempt from the flag too.                                                 #}
+  {% if google_oauth_enabled or current_user['google_sub'] %}
+  <div class="account-setting">
+    <div><h3>Sign in with Google</h3><p class="sub">
+      {%- if current_user['google_sub'] and google_only %}Connected &middot; it is the only way into this account.
+      {%- elif current_user['google_sub'] %}Connected &middot; you can sign in with either Google or your password.
+      {%- else %}Not connected.{% endif %}</p></div>
+    {% if current_user['google_sub'] %}
+      {% if google_only %}
+        <p class="note">Google is the only way into this account right now. Set a password above before disconnecting it.</p>
+      {% else %}
+        <form method="post" action="{{ url_for('google_unlink') }}" class="stack">
+          <p class="note">Disconnecting only removes the Google sign-in option. Your password keeps working and nothing else changes.</p>
+          <button class="btn btn--quiet" type="submit">Disconnect Google</button>
+        </form>
+      {% endif %}
+    {% elif google_oauth_enabled %}
+      <form method="post" action="{{ url_for('google_link') }}" class="stack">
+        <label>Current password<input name="password" type="password" autocomplete="current-password" required></label>
+        <p class="note">You will be sent to Google to choose an account. It can be a different address from the one above.</p>
+        <button class="btn btn--quiet" type="submit">Connect Google</button>
+      </form>
+    {% endif %}
+  </div>
+  {% endif %}
+</section>
+<section class="panel narrow stack legal-alert">
+  <h2>Delete My Account</h2>
+  <p>This permanently removes your public profile, private account information, designs, stored files, previews, and associated AI reviews. Useful comments remain but are attributed only to <strong>Deleted User</strong>.</p>
+  {% if owned_teams %}
+    <p><strong>You cannot delete this account yet.</strong> Transfer or delete these teams first:</p>
+    <ul>{% for team in owned_teams %}<li><a href="{{ url_for('team_detail', program=team['program'], number=team['number']) }}">{{ team['program']|upper }} Team {{ team['number'] }} &mdash; {{ team['name'] }}</a></li>{% endfor %}</ul>
+  {% elif google_only %}
+    <p><strong>Deleting an account needs your Botfolio password</strong>, and this account signs in with Google. Set a password from the section above, then come back here.</p>
+  {% else %}
+    <form method="post" action="{{ url_for('delete_account') }}" class="stack" onsubmit="return confirm('Permanently delete your Botfolio account and all of its designs? This cannot be undone.')">
+      <label>Current password<input name="password" type="password" autocomplete="current-password" required></label>
+      <label>Type DELETE to confirm<input name="confirmation" autocomplete="off" required pattern="DELETE"></label>
+      <button class="btn btn--danger" type="submit">Delete My Account</button>
+    </form>
+  {% endif %}
+</section>
+{% endblock %}

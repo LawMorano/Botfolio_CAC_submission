@@ -1,0 +1,734 @@
+{% extends "base.html" %}
+{% block title %}{{ design['title'] }} &mdash; Botfolio{% endblock %}
+{% block meta_description %}{{ (design['description'] or ('View ' ~ design['title'] ~ ' on Botfolio, the robotics design community.'))|striptags|truncate(180) }}{% endblock %}
+{% block og_title %}{{ design['title'] }} &mdash; Botfolio{% endblock %}
+{% block og_description %}{{ ((('Team ' ~ design['team_number'] ~ ' — ' ~ design['team_name'] ~ '. ') if design['team_number'] else ('By ' ~ design['username'] ~ '. ')) ~ ('✓ Competition Tested. ' if design['competition_tested'] else '') ~ (design['description'] or 'View this robotics design on Botfolio.'))|striptags|truncate(200) }}{% endblock %}
+{% block og_type %}article{% endblock %}
+{% block og_image %}{{ asset_url('uploads', design['image_filename'], external=True) }}{% endblock %}
+{% block twitter_title %}{{ design['title'] }} &mdash; Botfolio{% endblock %}
+{% block twitter_description %}{{ self.og_description() }}{% endblock %}
+{% block twitter_image %}{{ asset_url('uploads', design['image_filename'], external=True) }}{% endblock %}
+
+{# Structured data for this design: describes it as a creative work with its
+   author, image, and publish date, so a search result can show it as a
+   distinct piece rather than a generic page. tojson escapes every value
+   safely for both JSON and the surrounding <script>. #}
+{% block structured_data %}<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "CreativeWork",
+  "name": {{ design['title']|tojson }},
+  "url": "{{ url_for('design_detail', design_id=design['id'], _external=True) }}",
+  "image": "{{ asset_url('uploads', design['image_filename'], external=True) }}",
+  {% if design['description'] %}"description": {{ (design['description']|striptags|truncate(300))|tojson }},{% endif %}
+  {% if design['created_at'] %}"datePublished": {{ design['created_at'][:10]|tojson }},{% endif %}
+  "creator": {
+    "@type": {{ ("Organization" if design['team_number'] else "Person")|tojson }},
+    "name": {{ (design['team_name'] if design['team_number'] else design['username'])|tojson }}
+  },
+  "isPartOf": { "@id": "{{ url_for('index', _external=True) }}#website" }
+}
+</script>{% endblock %}
+
+{% block content %}
+<article class="detail">
+  <div class="detail__media">
+    <div class="image-gallery" data-image-gallery>
+      <div class="image-gallery__stage">
+        {% for image in design_images %}<img class="image-gallery__image{% if not loop.first %} is-hidden{% endif %}" data-gallery-image src="{{ asset_url('uploads', image['filename']) }}" alt="{{ design['title'] }} image {{ loop.index }}">{% endfor %}
+        {% if design['competition_tested'] %}<span class="detail__tested" aria-label="Competition tested" title="Competition tested"><span aria-hidden="true">&#10003;</span><span class="tested-badge__label">Competition tested</span></span>{% endif %}
+        {% if model_viewable %}<span class="badge badge--3d detail__badge-3d">3D</span>{% endif %}
+        {% if design_images|length > 1 %}<button class="image-gallery__arrow image-gallery__arrow--prev" type="button" data-gallery-prev aria-label="Previous image">&#8249;</button><button class="image-gallery__arrow image-gallery__arrow--next" type="button" data-gallery-next aria-label="Next image">&#8250;</button>{% endif %}
+      </div>
+      {% if design_images|length > 1 %}<div class="image-gallery__selector" role="tablist" aria-label="Choose an image">{% for image in design_images %}<button type="button" class="image-gallery__dot{% if loop.first %} is-active{% endif %}" data-gallery-select="{{ loop.index0 }}" aria-label="View image {{ loop.index }}" aria-selected="{{ 'true' if loop.first else 'false' }}"></button>{% endfor %}</div>{% endif %}
+    </div>
+
+    {% if design['model_filename'] or design['cad_link'] or design['onshape_link'] %}
+      <div class="detail__media-actions">
+
+        {% if model_viewable and current_user %}
+          <button class="btn detail__view-3d" type="button" id="view-3d">View in 3D</button>
+        {% elif model_viewable %}
+          {# The viewer fetches the stored model file itself, and that route now
+             needs an account exactly as the download does, so a signed-out
+             visitor is offered the way in rather than a button that fails. #}
+          <a class="btn detail__view-3d" href="{{ url_for('login', next=url_for('design_detail', design_id=design['id'])) }}">Sign in to view in 3D</a>
+        {% elif model_is_cad_source %}
+          <p class="note"><strong>Download-only model:</strong> STEP is CAD source rather than a mesh, so the browser viewer cannot draw it. Download it to open the solids in your own CAD software.</p>
+        {% elif design['model_filename'] %}
+          <p class="note"><strong>Download-only model:</strong> This file is larger than 500 MB, so the browser viewer is disabled.</p>
+        {% endif %}
+        {% if design['model_filename'] %}
+          <p class="note"><strong>Download warning:</strong> Files are provided by users and have not been verified by Botfolio. Scan files before opening them and independently evaluate all content before use.</p>
+        {% endif %}
+
+        <div class="detail__download-actions">
+          {% if design['model_filename'] %}<a class="btn btn--quiet" rel="nofollow" href="{{ url_for('download_design', design_id=design['id']) }}">Download User-Submitted File{% if design['model_size_bytes'] %} <span class="btn__filesize">{{ design['model_size_bytes']|filesizeformat }}</span>{% endif %}</a>{% endif %}
+          {% if design['cad_link'] or design['onshape_link'] %}
+            <a href="{{ url_for('open_cad', design_id=design['id']) }}"{% if current_user %} target="_blank"{% endif %} rel="nofollow noopener noreferrer" class="btn btn--quiet cad-button-link{% if design['cad_software'] == 'fusion-360' %} cad-button-link--fusion{% endif %}" aria-label="Open this design in {{ {'onshape':'Onshape','fusion-360':'Fusion 360','solidworks':'SolidWorks','inventor':'Inventor','freecad':'FreeCAD','creo':'Creo','download-only':'Download only','other':'CAD'}.get(design['cad_software'], 'CAD') }}">
+              {% if design['cad_software'] == 'solidworks' %}
+                <span class="cad-button-logo-crop cad-button-logo-crop--solidworks"><img src="{{ url_for('static', filename='images/solidworks-logo.png') }}" alt="SolidWorks"></span>
+              {% elif design['cad_software'] == 'fusion-360' %}
+                <img src="{{ url_for('static', filename='images/fusion-360-logo.png') }}" alt="Fusion 360" class="cad-button-logo cad-button-logo--fusion">
+              {% elif design['cad_software'] == 'onshape' or not design['cad_software'] %}
+                <img src="{{ url_for('static', filename='images/onshape-logo.png') }}" alt="Onshape" class="cad-button-logo">
+              {% else %}
+                Open CAD design · {{ {'inventor':'Inventor','freecad':'FreeCAD','creo':'Creo','download-only':'Download only','other':'Other CAD'}.get(design['cad_software'], 'CAD') }}
+              {% endif %}
+            </a>
+          {% endif %}
+        </div>
+      </div>
+    {% endif %}
+
+    {% if model_viewable and current_user %}
+      <p class="viewer-status" id="viewer-status" role="status"></p>
+      <dialog class="viewer-modal" id="viewer-modal" aria-labelledby="viewer-modal-title">
+        <div class="viewer-modal__shell">
+          <button class="viewer-modal__close" id="viewer-close" type="button" aria-label="Close 3D viewer">&times;</button>
+          <aside class="viewer-modal__controls">
+            <h2 id="viewer-modal-title">3D controls</h2>
+            <p>Drag to rotate<br>Scroll to zoom<br>Right-drag to move</p>
+            <button class="btn" type="button" data-view="reset">Reset view</button>
+            <div class="viewer-views">
+              <button class="btn btn--quiet" type="button" data-view="front">Front</button>
+              <button class="btn btn--quiet" type="button" data-view="back">Back</button>
+              <button class="btn btn--quiet" type="button" data-view="left">Left</button>
+              <button class="btn btn--quiet" type="button" data-view="right">Right</button>
+              <button class="btn btn--quiet" type="button" data-view="top">Top</button>
+              <button class="btn btn--quiet" type="button" data-view="bottom">Bottom</button>
+            </div>
+
+            <section class="viewer-anim" id="viewer-anim" hidden>
+              <h3>Motion</h3>
+              <select class="viewer-anim__clip" id="viewer-anim-clip" aria-label="Choose motion" hidden></select>
+              <div class="viewer-anim__row">
+                <button class="btn btn--quiet viewer-anim__play" id="viewer-anim-play" type="button" aria-label="Play motion">&#9654; Play</button>
+                <input class="viewer-anim__scrub" id="viewer-anim-scrub" type="range" min="0" max="1000" value="0" aria-label="Scrub through the motion">
+              </div>
+            </section>
+
+            <section class="viewer-parts" id="viewer-parts" hidden>
+              <h3>Parts</h3>
+              <div class="viewer-parts__list" id="viewer-parts-list"></div>
+              <button class="btn btn--quiet viewer-parts__all" id="viewer-parts-all" type="button">Show all</button>
+            </section>
+
+            {% if current_user and (current_user['id'] == design['user_id'] or current_user['is_admin']) %}
+            {# Last in the sidebar and boxed off on its own: everything above
+               changes only what this visitor is looking at, and this changes
+               what everybody sees. Sitting next to "Reset view" it would read
+               as another way to undo a stray drag. #}
+            <section class="viewer-orient-launch">
+              <h3>Orientation</h3>
+              <p>Set which way this model faces if the view buttons show the wrong sides.</p>
+              <button class="btn btn--quiet" id="viewer-orient-start" type="button">Reset viewer sequence</button>
+            </section>
+            {% endif %}
+
+            <p class="viewer-status" id="viewer-modal-status" role="status"></p>
+          </aside>
+          <div class="viewer viewer-modal__canvas" id="viewer">
+            <div class="viewer-loading" id="viewer-loading" hidden>
+              <span class="viewer-loading__text">Loading model</span>
+              <span class="viewer-loading__dots" aria-hidden="true"><i></i><i></i><i></i></span>
+            </div>
+          </div>
+        </div>
+      </dialog>
+    {% endif %}
+  </div>
+
+  <aside class="detail__body detail-card">
+    <p class="detail-card__eyebrow">
+      {{ design['archetype_name'] or 'Robot design' }}
+      {% if design['season_name'] %}&middot; {{ design['season_name'] }}{% endif %}
+    </p>
+
+    <h1>{{ design['title'] }}</h1>
+    {% if design_week_awards %}<div class="detail-card__awards" aria-label="Design of the Week awards">{% for award in design_week_awards %}<span class="founding-team-badge detail-card__award">Design of the Week &middot; Week of {{ award['week_start'] }}</span>{% endfor %}</div>{% endif %}
+    {% if current_user and current_user['is_admin'] %}
+      <form method="post" action="{{ url_for('moderate_design', design_id=design['id']) }}" class="panel design-admin-controls">
+        <strong>Administrator design controls</strong>
+        <input name="reason" maxlength="500" placeholder="Required moderation reason" required>
+        <div class="row">
+          <button class="btn btn--quiet" name="action" value="{{ 'restore' if design['is_hidden'] else 'hide' }}" type="submit">{{ 'Restore design' if design['is_hidden'] else 'Hide design' }}</button>
+          <button class="btn btn--danger" name="action" value="delete" type="submit" onclick="return confirm('Permanently delete this design and its files?')">Delete design</button>
+        </div>
+      </form>
+    {% endif %}
+    <div class="design-stats"><span title="Engaged browser views; repeat visits count after 30 minutes">◉ <span id="design-view-count">{{ design['visit_count'] }}</span> views since {{ view_count_start_label }}</span>{% if design['model_filename'] %}<span title="Times the uploaded file was downloaded">↓ {{ design['download_count'] - design['link_visit_count'] }} downloads</span>{% endif %}{% if design['cad_link'] or design['onshape_link'] %}<span title="Times someone opened this design's external model link">↗ {{ design['link_visit_count'] }} link visits</span>{% endif %}<span>♥ <span id="design-like-count">{{ design['like_count'] }}</span> likes</span></div>
+    <div class="design-actions">
+      {% if current_user %}
+        <form method="post" action="{{ url_for('toggle_design_like', design_id=design['id']) }}" data-async-like>
+          <button class="like-button{% if liked %} like-button--liked{% endif %}" type="submit" aria-pressed="{{ 'true' if liked else 'false' }}" aria-label="{{ 'Unlike this design' if liked else 'Like this design' }}">
+            <span class="like-button__heart" aria-hidden="true">{{ '♥' if liked else '♡' }}</span>
+            <span>{{ 'Liked' if liked else 'Like' }}</span>
+          </button>
+        </form>
+      {% else %}
+        <a class="like-button" href="{{ url_for('login', next=request.path) }}" aria-label="Sign in to like this design"><span class="like-button__heart" aria-hidden="true">♡</span><span>Like</span></a>
+      {% endif %}
+      {% if current_user %}<form method="post" action="{{ url_for('toggle_saved_design', design_id=design['id']) }}"><button class="btn btn--quiet" type="submit">{{ 'Saved' if saved else 'Save' }}</button></form>{% else %}<a class="btn btn--quiet" href="{{ url_for('login', next=request.path) }}">Save</a>{% endif %}
+      <button class="btn btn--quiet" type="button" data-share-url="{{ request.url }}">Share</button>
+      <a class="btn btn--quiet" href="{{ url_for('report_content', type='design', id=design['id'], url=request.url) }}">Report</a>
+    </div>
+
+    {% if design['description'] %}
+      <p class="detail__description detail-card__description">{{ design['description'] }}</p>
+    {% endif %}
+
+    <details class="detail-card__more">
+      <summary>See more details</summary>
+      <dl class="detail-card__meta">
+      <div>
+        <dt>Submitted by</dt>
+        <dd>{% if design['uploaded_by_admin'] %}Uploaded by admin{% else %}<a href="{{ url_for('profile', username=design['username']) }}">{{ design['username'] }}</a>{% endif %}</dd>
+      </div>
+      {% if contributors %}
+        <div class="detail-card__contributors">
+          <dt>Contributors</dt>
+          <dd><ul>{% for contributor in contributors %}<li><a href="{{ url_for('profile', username=contributor['username']) }}">{{ contributor['username'] }}</a>{% if contributor['role'] %} &mdash; {{ contributor['role'] }}{% endif %}</li>{% endfor %}</ul></dd>
+        </div>
+      {% endif %}
+      {% if design['team_number'] %}
+        <div>
+          <dt>Team</dt>
+          <dd><a href="{{ url_for('team_detail', program=design['team_program'], number=design['team_number']) }}">{{ programs[design['team_program']] }} {{ design['team_number'] }}{% if design['team_name'] %} &mdash; {{ design['team_name'] }}{% endif %}</a>{% if not design['team_attribution_accepted'] %} <span class="sub">(credit not yet confirmed by the team)</span>{% endif %}</dd>
+        </div>
+      {% endif %}
+      <div>
+        <dt>Submitted</dt>
+        <dd>{{ design['created_at'] }}</dd>
+      </div>
+      {% if design['prototype_version'] %}<div><dt>Prototype</dt><dd>V{{ design['prototype_version'] }}</dd></div>{% endif %}
+      {% if design['length_in'] and design['width_in'] and design['height_in'] %}<div><dt>Dimensions</dt><dd>{% if design['dimension_unit'] == 'mm' %}{{ (design['length_in'] * 25.4)|round(2) }} &times; {{ (design['width_in'] * 25.4)|round(2) }} &times; {{ (design['height_in'] * 25.4)|round(2) }} mm{% else %}{{ design['length_in'] }} &times; {{ design['width_in'] }} &times; {{ design['height_in'] }} in{% endif %}</dd></div>{% endif %}
+      {% if design['motor_count'] is not none %}<div><dt>Motors</dt><dd>{{ design['motor_count'] }}</dd></div>{% endif %}
+      {% if design['servo_count'] is not none %}<div><dt>Servos</dt><dd>{{ design['servo_count'] }}</dd></div>{% endif %}
+      </dl>
+    </details>
+
+    {% if current_user and (current_user['id'] == design['user_id'] or current_user['is_admin']) %}
+      <div class="owner-actions">
+        <a class="btn btn--quiet" href="{{ url_for('edit_design', design_id=design['id']) }}">Edit</a>
+        <form method="post" action="{{ url_for('delete_design', design_id=design['id']) }}" class="inline" onsubmit="return confirm('Delete “{{ design['title'] }}” permanently?')">
+          <button class="btn btn--danger" type="submit">Delete</button>
+        </form>
+      </div>
+    {% endif %}
+    {% if current_user and current_user['is_admin'] %}<form class="design-admin-award" method="post" action="{{ url_for('select_design_of_week', design_id=design['id']) }}"><button class="btn btn--primary" type="submit">{{ 'Remove from this week' if design['is_current_design_of_week'] else 'Choose as Design of the Week' }}</button></form>{% endif %}
+
+    <div class="note detail-card__disclaimer"><strong>User-submitted design</strong><br>Botfolio has not tested, inspected, approved, or certified this design. Independently evaluate its safety, reliability, legality, and competition eligibility before building or operating it.</div>
+  </aside>
+
+  {% include "_engineering_resources.html" %}
+
+  <!-- ============ tags ============ -->
+  <section class="detail__tags panel" id="tags">
+    <h2>Tags</h2>
+    <p class="sub">
+      Votes answer “does this tag actually describe <em>this</em> robot?”
+      Tags voted to {{ -2 }} or below stop showing here and stop matching in search.
+    </p>
+
+    {% if tags %}
+      <ul class="taglist">
+        {% for t in tags %}
+          <li class="taglist__item">
+            <a class="tag" href="{{ url_for('gallery', q=t['name']) }}">{{ t['name']|tagcase }}</a>
+            <span class="score {% if t['score'] > 0 %}score--pos{% elif t['score'] < 0 %}score--neg{% endif %}">{{ '+' if t['score'] > 0 }}{{ t['score'] }}</span>
+            {% if current_user %}
+              <form method="post" class="inline" action="{{ url_for('vote_tag', design_id=design['id'], tag_id=t['id']) }}" data-async-tag-vote>
+                <input type="hidden" name="value" value="1">
+                <button class="vote {% if t['my_vote'] == 1 %}vote--on{% endif %}" type="submit" title="This tag fits">▲</button>
+              </form>
+
+              <form method="post" class="inline" action="{{ url_for('vote_tag', design_id=design['id'], tag_id=t['id']) }}" data-async-tag-vote>
+                <input type="hidden" name="value" value="-1">
+                <button class="vote {% if t['my_vote'] == -1 %}vote--on{% endif %}" type="submit" title="This tag doesn't fit">▼</button>
+              </form>
+            {% endif %}
+            {% if current_user and current_user['is_admin'] %}<form method="post" class="inline" action="{{ url_for('remove_design_tag', design_id=design['id'], tag_id=t['id']) }}"><button class="vote" type="submit" title="Remove inappropriate tag">×</button></form>{% endif %}
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="empty">No tags yet.</p>
+    {% endif %}
+
+    {% if buried_tags %}
+      <details class="buried">
+        <summary>{{ buried_tags|length }} tag{{ '' if buried_tags|length == 1 else 's' }} voted down</summary>
+        <ul class="taglist">
+          {% for t in buried_tags %}
+            <li class="taglist__item taglist__item--buried">
+              <span class="tag tag--buried">{{ t['name']|tagcase }}</span>
+              <span class="score score--neg">{{ t['score'] }}</span>
+              {% if current_user %}
+                <form method="post" class="inline" action="{{ url_for('vote_tag', design_id=design['id'], tag_id=t['id']) }}" data-async-tag-vote>
+                  <input type="hidden" name="value" value="1">
+                  <button class="vote {% if t['my_vote'] == 1 %}vote--on{% endif %}" type="submit" title="Actually, this fits">▲</button>
+                </form>
+              {% endif %}
+            </li>
+          {% endfor %}
+        </ul>
+      </details>
+    {% endif %}
+
+    {% if current_user %}
+      <form method="post" class="tag-add" action="{{ url_for('add_design_tag', design_id=design['id']) }}">
+        <input name="name" placeholder="Add a tag…" maxlength="40" required list="tag-suggestions" autocomplete="off">
+        {% if suggested_tags %}<datalist id="tag-suggestions">{% for name in suggested_tags %}<option value="{{ name }}"></option>{% endfor %}</datalist>{% endif %}
+        <button class="btn" type="submit">Add</button>
+      </form>
+      {% if suggested_tags %}<p class="sub tag-add__hint">Suggestions from this {{ 'season and model type' if design['season_id'] and design['archetype_id'] else ('season' if design['season_id'] else ('model type' if design['archetype_id'] else 'community')) }} appear as you type.</p>{% endif %}
+    {% else %}
+      <p class="sub"><a href="{{ url_for('login') }}">Sign in</a> to add tags and vote.</p>
+    {% endif %}
+  </section>
+
+  {% include "_comments.html" %}
+
+  <!-- ============ Botfolio AI review ============ -->
+  <section class="detail__feedback ai-assistant" id="feedback">
+    <p class="ai-assistant__eyebrow">Powered by Botfolio AI</p>
+    <h2>Botfolio AI Review</h2>
+    <p class="sub">Request an automated engineering perspective on this design. Your question and response are private to your account. Unsaved chats are deleted after three days.</p>
+    <p class="note"><strong>AI notice:</strong> AI-generated feedback may be incomplete or incorrect. It is not engineering, safety, legal, or competition advice and should not replace independent review, testing, qualified adult supervision, or official competition rules.</p>
+
+    {% if current_user %}
+      <form method="post" action="{{ url_for('grade_design', design_id=design['id']) }}" class="ai-assistant__form">
+        <label for="ai-question">Your question</label>
+        <textarea id="ai-question" name="question" rows="4" maxlength="500" placeholder="How could this intake be made more reliable?"></textarea>
+
+        <div class="ai-assistant__actions">
+          <button class="btn btn--primary btn--lg" type="submit">{{ 'Get new feedback' if feedback else 'Get feedback' }}</button>
+          <button class="btn btn--focus btn--focus-on" type="button" data-focus="Reliability">Reliability</button>
+          <button class="btn btn--focus" type="button" data-focus="Buildability">Buildability</button>
+          <button class="btn btn--focus" type="button" data-focus="Serviceability">Serviceability</button>
+        </div>
+        <input type="hidden" name="focus" id="ai-focus" value="Reliability">
+      </form>
+    {% else %}
+      <p class="note"><a href="{{ url_for('login') }}">Sign in</a> to request a Botfolio AI review.</p>
+    {% endif %}
+
+    {% if feedback and feedback['status'] == 'ok' and rubric %}
+      <div class="ai-result ai-review">
+        <div class="ai-review__heading">
+          <div><p class="eyebrow">Latest review</p><h3>Botfolio AI Review</h3></div>
+          {% if rubric.get('scores') and rubric['scores'].get('overall') is not none %}<strong class="ai-review__overall">{{ rubric['scores']['overall'] }} <small>/ 100</small></strong>{% endif %}
+        </div>
+
+        {% if rubric.get('scores') %}
+          <dl class="ai-review__scores">
+            {% for label, key in [('Reliability', 'reliability'), ('Buildability', 'buildability'), ('Serviceability', 'serviceability')] %}
+              {% set value = rubric['scores'].get(key) %}
+              {% if value is not none %}<div><dt>{{ label }}</dt><dd>{{ value }}</dd></div>{% endif %}
+            {% endfor %}
+          </dl>
+        {% endif %}
+
+        <p class="ai-review__summary">{{ rubric['summary']|review_excerpt }}</p>
+
+        <form method="post" action="{{ url_for('toggle_ai_chat_saved', feedback_id=feedback['id']) }}">
+          <button class="btn btn--quiet" type="submit">{{ 'Remove from saved chats' if feedback['saved_at'] else 'Save chat for later' }}</button>
+        </form>
+
+        <details class="ai-review__full">
+          <summary>View Full Engineering Review</summary>
+          <div class="ai-review__full-body">
+            {% if rubric.get('answer') %}<h3>Answer to your question</h3><p class="detail__description">{{ rubric['answer'] }}</p>{% endif %}
+            {% for heading, key in [('Strengths', 'strengths'), ('Concerns', 'concerns'), ('Suggestions', 'suggestions')] %}
+              {% if rubric.get(key) %}<h3>{{ heading }}</h3><ul class="bullets">{% for item in rubric[key] %}<li>{{ item }}</li>{% endfor %}</ul>{% endif %}
+            {% endfor %}
+            {% if rubric.get('missing_information') %}<h3>Additional information needed</h3><ul class="bullets">{% for item in rubric['missing_information'] %}<li>{{ item }}</li>{% endfor %}</ul>{% endif %}
+            <p class="note">This response was generated by artificial intelligence and has not been independently verified by Botfolio.</p>
+          </div>
+        </details>
+      </div>
+    {% elif feedback %}
+      <p class="note">{{ feedback['summary'] }}</p><p class="note">This response was generated by artificial intelligence and has not been independently verified by Botfolio.</p>
+    {% elif not ai_enabled %}
+      <p class="note">The interface is ready, but no AI API key is connected on this copy of the site.</p>
+    {% endif %}
+  </section>
+</article>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.querySelectorAll('[data-share-url]').forEach((button) => button.addEventListener('click', async () => {
+  const url = button.dataset.shareUrl;
+  try { await navigator.clipboard.writeText(url); button.textContent = 'Link copied'; }
+  catch (_) { window.prompt('Copy link', url); }
+}));
+const aiQuestion = document.getElementById('ai-question');
+const aiFocus = document.getElementById('ai-focus');
+document.querySelectorAll('[data-focus]').forEach((button) => {
+  button.addEventListener('click', () => {
+    document.querySelectorAll('[data-focus]').forEach((item) => item.classList.remove('btn--focus-on'));
+    button.classList.add('btn--focus-on');
+    aiFocus.value = button.dataset.focus;
+    if (aiQuestion && !aiQuestion.value.trim()) {
+      aiQuestion.value = `Review this design for ${button.dataset.focus.toLowerCase()}. What works well, what could fail, and what should be changed?`;
+    }
+    aiQuestion?.focus();
+  });
+});
+</script>
+{% if model_viewable and current_user %}
+<script type="module">
+import { ModelViewer, webglAvailable } from "{{ url_for('static', filename='viewer.js') }}";
+import { mountOrientationWizard } from "{{ url_for('static', filename='viewer-orientation.js') }}";
+
+const button = document.getElementById('view-3d');
+const holder = document.getElementById('viewer');
+const status = document.getElementById('viewer-status');
+const modal = document.getElementById('viewer-modal');
+const modalStatus = document.getElementById('viewer-modal-status');
+const loadingOverlay = document.getElementById('viewer-loading');
+const closeButton = document.getElementById('viewer-close');
+
+const modelURL = {{ url_for('view_design_model', design_id=design['id'])|tojson }};
+// `tojson` escapes for safe embedding in a script tag; the server has already
+// rebuilt this value from scratch (see clean_viewer_state in routes/designs.py).
+const cameraState = JSON.parse({{ (design['camera_json'] or 'null')|tojson }});
+
+// Null unless this visitor can run the orientation sequence, which is what
+// decides whether the sequence is mounted at all — the button is only rendered
+// under the same owner-or-admin test.
+const orientStart = document.getElementById('viewer-orient-start');
+const orientURL = {{ url_for('designs.set_design_orientation', design_id=design['id'])|tojson }};
+const csrfToken = {{ csrf_token()|tojson }};
+// An admin is looking at somebody else's work; the owner is looking at their own
+// and does not need telling whose it is.
+const ownerName = {{ (design['username'] if design['user_id'] != current_user['id'] else None)|tojson }};
+let orientWizard = null;
+
+if (!webglAvailable()) {
+  button.disabled = true;
+  status.textContent = 'Your browser does not support WebGL, so the 3D view is unavailable.';
+} else {
+  let viewer = null;
+
+  // A GLB assembly carries interactive extras STL/OBJ don't: baked motion
+  // (mates exported as animation) and a part hierarchy. These controls stay
+  // hidden until a loaded model actually has them, so a plain part shows the
+  // same simple viewer as before.
+  function setupAssemblyControls(viewer) {
+    const animPanel = document.getElementById('viewer-anim');
+    const clipSelect = document.getElementById('viewer-anim-clip');
+    const playButton = document.getElementById('viewer-anim-play');
+    const scrub = document.getElementById('viewer-anim-scrub');
+    const partsPanel = document.getElementById('viewer-parts');
+    const partsList = document.getElementById('viewer-parts-list');
+    const partsAll = document.getElementById('viewer-parts-all');
+
+    if (viewer.hasAnimation()) {
+      animPanel.hidden = false;
+
+      const setPlayLabel = (playing) => {
+        playButton.innerHTML = playing ? '&#10073;&#10073; Pause' : '&#9654; Play';
+        playButton.setAttribute('aria-label', playing ? 'Pause motion' : 'Play motion');
+      };
+      setPlayLabel(false);
+
+      const names = viewer.clipNames();
+      if (names.length > 1) {
+        clipSelect.hidden = false;
+        names.forEach((name, i) => {
+          const option = document.createElement('option');
+          option.value = String(i);
+          option.textContent = name;
+          clipSelect.append(option);
+        });
+        clipSelect.addEventListener('change', () => {
+          viewer.selectClip(Number(clipSelect.value), false);
+          setPlayLabel(false);
+          scrub.value = '0';
+        });
+      }
+
+      playButton.addEventListener('click', () => setPlayLabel(viewer.togglePlay()));
+
+      let scrubbing = false;
+      const endScrub = () => { scrubbing = false; };
+      scrub.addEventListener('pointerdown', () => { scrubbing = true; });
+      scrub.addEventListener('pointerup', endScrub);
+      scrub.addEventListener('pointercancel', endScrub);
+      scrub.addEventListener('input', () => viewer.seek(Number(scrub.value) / 1000));
+
+      const tick = () => {
+        if (!scrubbing && viewer.isPlaying()) {
+          scrub.value = String(Math.round(viewer.progress() * 1000));
+        }
+        requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+    }
+
+    const parts = viewer.parts();
+    if (parts.length > 1) {
+      partsPanel.hidden = false;
+
+      const syncPartChecks = () => {
+        const state = viewer.parts();
+        [...partsList.querySelectorAll('input[type=checkbox]')].forEach((box, i) => {
+          box.checked = state[i].visible;
+        });
+      };
+
+      for (const part of parts) {
+        const row = document.createElement('label');
+        row.className = 'viewer-parts__row';
+
+        const box = document.createElement('input');
+        box.type = 'checkbox';
+        box.checked = true;
+        box.addEventListener('change', () => viewer.setPartVisible(part.id, box.checked));
+
+        const name = document.createElement('span');
+        name.className = 'viewer-parts__name';
+        name.textContent = part.name;
+
+        const only = document.createElement('button');
+        only.type = 'button';
+        only.className = 'viewer-parts__only';
+        only.textContent = 'Only';
+        only.addEventListener('click', (event) => {
+          event.preventDefault();
+          viewer.isolatePart(part.id);
+          syncPartChecks();
+        });
+
+        row.append(box, name, only);
+        partsList.append(row);
+      }
+
+      partsAll.addEventListener('click', () => {
+        viewer.showAllParts();
+        syncPartChecks();
+      });
+    }
+  }
+
+  // Mounted on the first open rather than at page load, because there is no
+  // viewer to hand it until then, and because the panel it builds has to live
+  // inside the shell — the modal is a <dialog>, and anything outside it is
+  // painted underneath while it is open.
+  function setupOrientation(viewer) {
+    if (!orientStart) return;
+    orientWizard = mountOrientationWizard({
+      viewer,
+      button: orientStart,
+      host: modal.querySelector('.viewer-modal__shell'),
+      ownerName,
+      coverHint: 'The picture on this design is a photograph and has not changed. '
+        + 'If it now shows the model from an angle you would not choose, recapture '
+        + 'it from the edit page.',
+      async save(state) {
+        const response = await fetch(orientURL, {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken},
+          body: JSON.stringify(state),
+        });
+        if (!response.ok) {
+          const body = await response.json().catch(() => ({}));
+          throw new Error(body.error || 'That could not be saved. Try again.');
+        }
+      },
+    });
+  }
+
+  button.addEventListener('click', async () => {
+    modal.showModal();
+
+    if (!viewer) {
+      loadingOverlay.hidden = false;
+      modalStatus.textContent = 'Loading model...';
+      status.textContent = 'Loading model…';
+      viewer = new ModelViewer(holder);
+      try {
+        await viewer.loadURL(modelURL);
+        viewer.setCameraState(cameraState);
+        setupAssemblyControls(viewer);
+        setupOrientation(viewer);
+        modalStatus.textContent = 'Model ready.';
+        status.textContent = 'Drag to rotate, scroll to zoom.';
+      } catch (err) {
+        modalStatus.textContent = 'Could not load the model. ' + err.message;
+        status.textContent = 'Could not load the model. ' + err.message;
+      } finally {
+        loadingOverlay.hidden = true;
+      }
+    }
+  });
+  // Halfway through the orientation sequence the user has lined up a front by
+  // hand and has nothing saved yet, so the two ways of closing this dialog by
+  // accident — a click that lands beside the shell, and Escape — are held back
+  // until they have finished or cancelled. The X still closes: that one is
+  // deliberate. Escape is caught by the sequence itself, which needs it before
+  // the dialog's own handling of it.
+  const sequenceRunning = () => Boolean(orientWizard && orientWizard.isActive());
+  closeButton.addEventListener('click', () => modal.close());
+  modal.addEventListener('click', (event) => {
+    if (event.target === modal && !sequenceRunning()) modal.close();
+  });
+  document.querySelectorAll('[data-view]').forEach((control) => {
+    control.addEventListener('click', () => {
+      if (!viewer) return;
+      if (control.dataset.view === 'reset') viewer.resetView();
+      else viewer.setView(control.dataset.view);
+    });
+  });
+}
+</script>
+{% endif %}
+<script>
+// A page request is not a view: crawlers, link previews, HEAD probes and
+// browser prefetches all request HTML. Count only after a real browser has kept
+// the page visible for five seconds or delivered a trusted interaction.
+(() => {
+  const counter = document.getElementById('design-view-count');
+  if (!counter) return;
+
+  const endpoint = {{ url_for('record_design_view', design_id=design['id'])|tojson }};
+  const csrfToken = {{ csrf_token()|tojson }};
+  let sent = false;
+  let attempts = 0;
+  let visibleStarted = null;
+  let visibleMilliseconds = 0;
+  let timer = null;
+
+  const sendView = async () => {
+    if (sent || document.visibilityState !== 'visible') return;
+    sent = true;
+    attempts += 1;
+    try {
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: {'Accept': 'application/json', 'X-CSRF-Token': csrfToken},
+        keepalive: true,
+      });
+      if (!response.ok) throw new Error('view was not recorded');
+      const result = await response.json();
+      counter.textContent = result.view_count;
+    } catch (_) {
+      if (attempts < 2) {
+        sent = false;
+        window.setTimeout(sendView, 10000);
+      }
+    }
+  };
+
+  const scheduleVisibleView = () => {
+    if (document.visibilityState !== 'visible' || sent) return;
+    visibleStarted = performance.now();
+    const remaining = Math.max(0, 5000 - visibleMilliseconds);
+    window.clearTimeout(timer);
+    timer = window.setTimeout(sendView, remaining);
+  };
+
+  const pauseVisibleView = () => {
+    window.clearTimeout(timer);
+    if (visibleStarted !== null) {
+      visibleMilliseconds += performance.now() - visibleStarted;
+      visibleStarted = null;
+    }
+  };
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') scheduleVisibleView();
+    else pauseVisibleView();
+  });
+
+  const engaged = (event) => {
+    if (event.isTrusted && document.visibilityState === 'visible') sendView();
+  };
+  for (const name of ['pointerdown', 'keydown', 'touchstart', 'scroll']) {
+    window.addEventListener(name, engaged, {once: true, passive: true});
+  }
+  scheduleVisibleView();
+})();
+
+const asyncPost = async (form) => {
+  const response = await fetch(form.action, {
+    method: 'POST',
+    headers: {'Accept': 'application/json'},
+    body: new FormData(form),
+  });
+  if (!response.ok) throw new Error('That update could not be saved. Please try again.');
+  return response.json();
+};
+
+const likeForm = document.querySelector('[data-async-like]');
+if (likeForm) {
+  likeForm.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const button = likeForm.querySelector('button');
+    if (button.disabled) return;
+    button.disabled = true;
+    try {
+      const result = await asyncPost(likeForm);
+      button.classList.toggle('like-button--liked', result.liked);
+      button.setAttribute('aria-pressed', String(result.liked));
+      button.setAttribute('aria-label', result.liked ? 'Unlike this design' : 'Like this design');
+      button.querySelector('.like-button__heart').textContent = result.liked ? '♥' : '♡';
+      button.querySelector('span:last-child').textContent = result.liked ? 'Liked' : 'Like';
+      document.getElementById('design-like-count').textContent = result.like_count;
+    } catch (error) {
+      window.alert(error.message);
+    } finally {
+      button.disabled = false;
+    }
+  });
+}
+
+document.querySelectorAll('[data-async-tag-vote]').forEach((form) => {
+  form.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const item = form.closest('.taglist__item');
+    const buttons = [...item.querySelectorAll('[data-async-tag-vote] button')];
+    if (buttons.some((button) => button.disabled)) return;
+    buttons.forEach((button) => { button.disabled = true; });
+    try {
+      const result = await asyncPost(form);
+      const score = item.querySelector('.score');
+      score.textContent = `${result.score > 0 ? '+' : ''}${result.score}`;
+      score.classList.toggle('score--pos', result.score > 0);
+      score.classList.toggle('score--neg', result.score < 0);
+      item.querySelectorAll('[data-async-tag-vote]').forEach((voteForm) => {
+        const vote = Number(voteForm.querySelector('[name="value"]').value);
+        const active = result.my_vote === vote;
+        voteForm.querySelector('button').classList.toggle('vote--on', active);
+      });
+    } catch (error) {
+      window.alert(error.message);
+    } finally {
+      buttons.forEach((button) => { button.disabled = false; });
+    }
+  });
+});
+
+document.querySelectorAll('[data-image-gallery]').forEach((gallery) => {
+  const images = [...gallery.querySelectorAll('[data-gallery-image]')];
+  const selectors = [...gallery.querySelectorAll('[data-gallery-select]')];
+  if (images.length < 2) return;
+  let current = 0;
+  const show = (index) => {
+    current = (index + images.length) % images.length;
+    images.forEach((image, i) => image.classList.toggle('is-hidden', i !== current));
+    selectors.forEach((selector, i) => {
+      selector.classList.toggle('is-active', i === current);
+      selector.setAttribute('aria-selected', String(i === current));
+    });
+  };
+  gallery.querySelector('[data-gallery-prev]').addEventListener('click', () => show(current - 1));
+  gallery.querySelector('[data-gallery-next]').addEventListener('click', () => show(current + 1));
+  selectors.forEach((selector) => selector.addEventListener('click', () => show(Number(selector.dataset.gallerySelect))));
+});
+</script>
+{% endblock %}

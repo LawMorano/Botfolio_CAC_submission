@@ -1,0 +1,6 @@
+{% if admin|default(false) %}
+  <span class="role-badge role-badge--admin" title="Botfolio administrator" aria-label="Botfolio administrator">A</span>
+{% elif role %}
+  {% set labels = {'student': 'Student', 'mentor': 'Mentor', 'coach': 'Coach', 'affiliate': 'Robotics affiliate'} %}
+  <span class="role-badge role-badge--{{ role }}" title="Self-identified {{ labels.get(role, 'robotics community') }} account" aria-label="Self-identified {{ labels.get(role, 'robotics community') }} account">{{ labels.get(role, 'Robotics')[0] }}</span>
+{% endif %}

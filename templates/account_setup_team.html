@@ -1,0 +1,42 @@
+{% extends "auth_base.html" %}
+{% block title %}Your FTC team &mdash; Botfolio{% endblock %}
+
+{% block auth_eyebrow %}{% with current_step=4 %}{% include "_account_setup_progress.html" %}{% endwith %}{% endblock %}
+{% block auth_heading %}Are you on an FTC team?{% endblock %}
+{% block auth_sub %}<p class="sub">If you compete with a team, tell us its number so we can connect you to its Botfolio page.</p>{% endblock %}
+
+{% block auth_form %}
+  <form method="post" class="stack account-setup-form" id="team-affiliation-form">
+    <fieldset class="setup-choice-group">
+      <legend class="sr-only">FTC team status</legend>
+      <label class="role-option"><input type="radio" name="on_team" value="yes" data-team-toggle{% if current_user['ftc_team_number'] %} checked{% endif %} required><span class="role-option__icon" aria-hidden="true">#</span><span><strong>Yes, I&rsquo;m on an FTC team</strong><small>You can request to join your team&rsquo;s page next</small></span></label>
+      <label class="role-option"><input type="radio" name="on_team" value="no" data-team-toggle{% if not current_user['ftc_team_number'] %} checked{% endif %}><span class="role-option__icon" aria-hidden="true">&ndash;</span><span><strong>Not right now</strong><small>You can add your team anytime from your profile</small></span></label>
+    </fieldset>
+    <div class="setup-team-number" data-team-number-field>
+      <label for="ftc-team-number">Team number</label>
+      <input id="ftc-team-number" name="ftc_team_number" type="number" inputmode="numeric" min="1" max="99999" value="{{ current_user['ftc_team_number'] or '' }}" placeholder="e.g. 12345" autocomplete="off">
+    </div>
+    <div class="setup-actions">
+      <a class="btn btn--quiet btn--lg" href="{{ url_for('account_setup_role') }}">Back</a>
+      <button class="btn btn--primary btn--lg" type="submit">Finish setup</button>
+    </div>
+  </form>
+  <script>
+  // Progressive enhancement: only reveal the team-number field when "Yes" is chosen.
+  // Without JS the field simply stays visible and the server ignores it when "No".
+  (function () {
+    var field = document.querySelector('[data-team-number-field]');
+    var input = document.getElementById('ftc-team-number');
+    var toggles = document.querySelectorAll('[data-team-toggle]');
+    function sync() {
+      var yes = document.querySelector('[data-team-toggle][value="yes"]');
+      var on = yes && yes.checked;
+      field.hidden = !on;
+      input.required = !!on;
+      if (on) { input.focus(); }
+    }
+    toggles.forEach(function (t) { t.addEventListener('change', sync); });
+    sync();
+  })();
+  </script>
+{% endblock %}

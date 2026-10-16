@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Help &mdash; Botfolio{% endblock %}
+{% block content %}
+<section class="help">
+  <p class="eyebrow">Help &amp; support</p>
+  <h1>How Botfolio works</h1>
+  <p class="sub">Everything you need to get a design online, plus the right inbox
+    for whatever you need a hand with.</p>
+
+  <ol class="how__steps">
+    <li>
+      <h3>Upload your design</h3>
+      <p>Upload your CAD file and view it directly in your browser. Rotate, zoom,
+         and inspect the model before publishing.</p>
+    </li>
+    <li>
+      <h3>Choose your best view</h3>
+      <p>Position the model to highlight the mechanism, then capture the preview
+         that will represent your design throughout Botfolio.</p>
+    </li>
+    <li>
+      <h3>Share, tag &amp; improve</h3>
+      <p>Publish your design so other teams can discover it, suggest tags, and
+         learn from it. Request AI-assisted feedback when you want another perspective.</p>
+    </li>
+  </ol>
+
+  <h2>Get in touch</h2>
+  <p class="sub">Choose the channel that best matches your request, or
+    <a href="{{ url_for('contact') }}">send the Botfolio team a message</a>.</p>
+  <div class="contact-grid" aria-label="Botfolio contact directory">
+    <a class="contact-card" href="mailto:{{ support_email }}"><span>General support</span><strong>{{ support_email }}</strong><small>Accounts, uploads, designs, and using Botfolio.</small></a>
+    <a class="contact-card" href="mailto:{{ privacy_email }}"><span>Privacy and deletion</span><strong>{{ privacy_email }}</strong><small>Privacy questions, data requests, and account deletion.</small></a>
+    <a class="contact-card" href="mailto:{{ security_email }}"><span>Security and urgent content</span><strong>{{ security_email }}</strong><small>Compromised accounts, malicious files, and urgent image-removal requests.</small></a>
+    <a class="contact-card" href="mailto:{{ copyright_email }}"><span>Copyright</span><strong>{{ copyright_email }}</strong><small>Copyright complaints, takedown notices, and counter-notices.</small></a>
+    <a class="contact-card" href="mailto:{{ legal_email }}"><span>Legal</span><strong>{{ legal_email }}</strong><small>Formal legal notices and other legal matters.</small></a>
+    <a class="contact-card" href="{{ url_for('report_content') }}"><span>Report content</span><strong>Open the report form</strong><small>Policy, safety, privacy, or conduct concerns.</small></a>
+  </div>
+</section>
+{% endblock %}

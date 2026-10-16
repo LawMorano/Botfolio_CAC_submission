@@ -1,0 +1,779 @@
+{% from "_team_credit.html" import team_credit %}
+{% extends "base.html" %}
+{% block title %}Submit a design &mdash; Botfolio{% endblock %}
+
+{% block content %}
+<div class="submit-head">
+  <div class="submit-head__intro">
+    <h1>Submit a design</h1>
+    <p class="sub">Upload your model and images, add the details, and publish.</p>
+  </div>
+  <div class="submit-head__quick-wrap">
+    <a class="btn submit-head__quick" href="{{ url_for('submit_link') }}">
+      <span aria-hidden="true">&#9889;</span> Quick-share a design
+    </a>
+  </div>
+</div>
+
+<form method="post" enctype="multipart/form-data" class="submit-form" id="submit-form"
+      data-draft-owner="{{ current_user['id'] }}">
+
+  <div class="submit-grid">
+    <!-- ============ preview ============ -->
+    <section class="panel">
+      <h2>1. Preview images</h2>
+
+      <div id="viewer-panel" hidden>
+        <p class="sub">
+          Upload an <code>.stl</code>, <code>.obj</code>, or <code>.glb</code>, drag to rotate it to the angle you want people to
+          see, then capture it. A <code>.step</code> is shared for download
+          instead, so give that one a picture of its own.
+        </p>
+
+        <label class="file-drop">
+          <input type="file" name="model_file" id="model-file" accept=".stl,.obj,.glb,.step,.stp">
+          <span>Choose a 3D model</span>
+          <small>
+            Files up to 2.5 GB can be stored and downloaded. Models up to 350 MB
+            open automatically; 350&ndash;500 MB models require confirmation; larger
+            models are download-only. STL and OBJ render in a single grey; a
+            <code>.glb</code> assembly keeps its colours, parts, and any baked
+            motion you can play in the viewer. A <code>.step</code> or
+            <code>.stp</code> is CAD source — whoever downloads it gets solids
+            they can edit, which no mesh gives them, but the browser cannot draw
+            one, so it is stored for download only.
+          </small>
+        </label>
+
+        <div class="model-upload-progress" id="model-upload-progress" hidden aria-live="polite">
+          <div class="model-upload-progress__label">
+            <span id="model-upload-stage">Preparing model upload…</span>
+            <strong id="model-upload-percent">0%</strong>
+          </div>
+          <div class="model-upload-progress__track" id="model-upload-track"
+               role="progressbar" aria-label="3D model upload" aria-valuemin="0"
+               aria-valuemax="100" aria-valuenow="0">
+            <span id="model-upload-fill"></span>
+          </div>
+        </div>
+
+        <div class="viewer" id="viewer" hidden></div>
+        <p class="viewer-status" id="viewer-status" role="status"></p>
+        <button class="btn btn--quiet" type="button" id="attempt-view" hidden>
+          Attempt 3D preview
+        </button>
+
+        <div class="viewer-actions" id="viewer-actions" hidden>
+          <button class="btn" type="button" id="reset-view">Reset view</button>
+          <button class="btn btn--primary" type="button" id="capture">
+            Set this angle as the preview
+          </button>
+        </div>
+
+        <div class="capture-preview" id="capture-preview" hidden>
+          <img id="capture-image" alt="Captured preview">
+          <p class="sub">This is what the gallery will show.</p>
+        </div>
+      </div>
+
+      <div class="fallback">
+        <h3 id="fallback-heading">Add robot pictures</h3>
+        <p class="sub">
+          Upload up to eight photos or screenshots. The first picture becomes
+          the gallery cover. If you capture a 3D preview, it becomes the cover
+          and these pictures appear after it.
+        </p>
+        <label class="file-drop">
+          <input type="file" name="image_files" id="image-file" multiple
+                 accept=".png,.jpg,.jpeg,.webp">
+          <span>Choose pictures</span>
+          <small>Up to 8 images. PNG, JPG, or WebP; 8 MB each.</small>
+        </label>
+        <p class="sub image-paste-hint">
+          Or press <kbd>Ctrl</kbd>+<kbd>V</kbd> to paste a screenshot straight from the
+          Snipping Tool or clipboard.
+          <span id="image-paste-status" class="image-paste-status" role="status" aria-live="polite"></span>
+        </p>
+        <div class="selected-images" id="selected-images" hidden aria-live="polite">
+          <div class="section-head"><strong id="selected-images-count"></strong><button class="text-button" id="clear-images" type="button">Clear all</button></div>
+          <ul class="selected-images__list" id="selected-images-list"></ul>
+        </div>
+      </div>
+
+      <noscript>
+        <p class="note">
+          JavaScript is turned off, so the 3D viewer is unavailable. Upload a
+          picture instead &mdash; the form works fine without it.
+        </p>
+      </noscript>
+
+      <input type="hidden" name="preview_data_url" id="preview-data-url">
+      <input type="hidden" name="camera_json" id="camera-json">
+      <input type="hidden" name="model_upload_token" id="model-upload-token">
+    </section>
+
+    <!-- ============ metadata ============ -->
+    <section class="panel">
+      <h2>2. Describe it</h2>
+
+      <label>
+        Title
+        <input name="title" required maxlength="120"
+               placeholder="e.g. Dual-stage boxtube slide with passthrough">
+      </label>
+
+      <label>
+        Description
+        <textarea name="description" rows="6"
+                  placeholder="What does it do, how does it score, what would you change?"></textarea>
+      </label>
+      <div class="two-col design-stage-fields">
+        <label>
+          Prototype version
+          <input name="prototype_version" type="number" min="1" max="99" value="1" required>
+          <small>Enter 1 for V1, 2 for V2, and so on.</small>
+        </label>
+
+        <label>
+          Competition tested?
+          <select name="competition_tested" required>
+            <option value="">Choose one</option>
+            <option value="1">Yes, used in competition</option>
+            <option value="0">No, not yet</option>
+          </select>
+          <small>You can update this after an event.</small>
+        </label>
+      </div>
+      <fieldset class="design-spec-fields">
+        <legend>Physical specifications</legend>
+        <p class="sub">Optional. Skip them if nothing is measured yet &mdash; but if you fill one in, fill in all three.</p>
+        <label>Measurement unit
+          <select name="dimension_unit" id="dimension-unit">
+            <option value="in">Inches (in)</option>
+            <option value="mm">Millimeters (mm)</option>
+          </select>
+        </label>
+        <div class="design-dimensions">
+          <label>Length (<span class="dimension-unit-label">in</span>)<input name="length_in" type="number" min="0.01" max="1000" step="0.01" placeholder="18"></label>
+          <label>Width (<span class="dimension-unit-label">in</span>)<input name="width_in" type="number" min="0.01" max="1000" step="0.01" placeholder="18"></label>
+          <label>Height (<span class="dimension-unit-label">in</span>)<input name="height_in" type="number" min="0.01" max="1000" step="0.01" placeholder="14"></label>
+        </div>
+        <div class="two-col">
+          <label>Number of motors <small>Optional</small><input name="motor_count" type="number" min="0" max="99" step="1" placeholder="4"></label>
+          <label>Number of servos <small>Optional</small><input name="servo_count" type="number" min="0" max="99" step="1" placeholder="2"></label>
+        </div>
+      </fieldset>
+      <div class="two-col cad-sharing-fields">
+        <label>CAD software
+          <select name="cad_software" data-cad-software required>
+            <option value="">Choose software…</option>
+            {% for value, label in cad_software_choices.items() %}<option value="{{ value }}">{{ label }}</option>{% endfor %}
+          </select>
+        </label>
+        <label data-cad-link-field hidden>Design link <small>Optional</small>
+          <input type="url" name="cad_link" data-cad-link placeholder="Paste a public share link">
+          <small>Share a viewable document or project link from the selected CAD platform.</small>
+        </label>
+      </div>
+
+      <label>
+        Robotics program
+        <select name="program" id="program-select" required>
+          {% for code, label in programs.items() %}
+            <option value="{{ code }}"{% if selected_program == code %} selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </label>
+
+      <label>
+        Season
+        <select name="season_id" id="season-select">
+          <option value="">Not season-specific</option>
+          {% for s in seasons %}
+            <option value="{{ s['id'] }}" data-program="{{ s['program'] }}"
+                    {% if selected_season == s['id'] %}selected{% endif %}>
+              {{ s['name'] }} ({{ s['year_label'] }})
+            </option>
+          {% endfor %}
+        </select>
+      </label>
+
+      <label>Design type
+        <select name="design_type" required>{% for key,label in design_types.items() %}<option value="{{ key }}"{% if request.form.get('design_type','full-robot') == key %} selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+        <small>What kind of engineering resource is this? These choices stay consistent across seasons.</small>
+      </label>
+      <fieldset class="function-picker"><legend>Functions <small>Select all that apply</small></legend><div class="filter-options">{% for key,label in design_functions.items() %}<label><input type="checkbox" name="functions" value="{{ key }}"{% if key in request.form.getlist('functions') %} checked{% endif %}>{{ label }}</label>{% endfor %}</div></fieldset>
+      <input type="hidden" name="archetype_id" value="">
+
+      {% if current_user['is_admin'] %}
+        {{ team_credit('Upload for', 'This gives creator credit. It does not create a team-managed profile or award a Founding 50 spot; a team representative must claim and confirm it.',
+                       number=request.form.get('admin_team_number', ''),
+                       selected=request.form.get('admin_attribution', 'individual')) }}
+      {% else %}
+        <label>Upload for
+          <select name="team_id" required id="team-select">
+            <option value="">Choose team or individual</option>
+            <option value="individual"{% if request.form.get('team_id') == 'individual' %} selected{% endif %}>Individual</option>
+            {% for t in teams %}<option value="{{ t['id'] }}" data-program="{{ t['program'] }}"{% if request.form.get('team_id') == t['id']|string %} selected{% endif %}>{{ programs[t['program']] }} Team {{ t['number'] }} &mdash; {{ t['name'] }}</option>{% endfor %}
+          </select>
+          <small>Required. Choose yourself or a team you belong to.</small>
+        </label>
+      {% endif %}
+
+      <label>
+        Tags
+        <input name="tags" id="tag-search" list="tag-suggestions" maxlength="255" placeholder="Search tags; separate multiple tags with commas">
+        <datalist id="tag-suggestions"></datalist>
+        <small>
+          Comma-separated. Others can add more later, and vote on whether yours
+          actually fit.
+        </small>
+      </label>
+
+      <fieldset class="contributors-picker"><legend>Contributors</legend><p class="sub">Credit registered Botfolio users who helped make this design. It will appear on each contributor's Robotics Profile.</p>
+        {% for row in range(3) %}<div class="two-col"><label>Username <input name="contributor_username" maxlength="24" placeholder="Registered username"></label><label>Role <select name="contributor_role"><option value="">No role selected</option>{% for role in contributor_roles %}<option value="{{ role }}">{{ role }}</option>{% endfor %}</select></label></div>{% endfor %}
+      </fieldset>
+
+      <fieldset class="panel legal-consent"><legend>Upload Certification</legend>
+        <label class="check-row"><input id="upload-certification" type="checkbox" name="upload_certification" value="accepted" required><span>I confirm that I created this content or have permission from its owner and my team to share it publicly; it does not contain confidential, stolen, unlawful, private, or intentionally unsafe material; I have permission to include any identifiable person shown; and I understand that it may be publicly viewed and downloaded.</span></label>
+        <p class="sub">By submitting this design, you grant Botfolio permission to host, display, resize, format, and make the content available through the platform as described in the <a href="{{ url_for('terms') }}">Terms of Use</a>.</p>
+        <p class="note"><strong>Safety notice:</strong> Botfolio does not test, inspect, approve, or certify user-submitted designs. Independently evaluate all designs and use appropriate adult supervision and safety precautions.</p>
+      </fieldset>
+      <button class="btn btn--primary btn--lg" id="publish-design" type="submit" disabled>Publish design</button>
+    </section>
+  </div>
+</form>
+
+<section class="upload-page" id="upload-page" hidden aria-live="polite" aria-labelledby="upload-page-title">
+  <div class="upload-page__fireworks" id="upload-fireworks" aria-hidden="true"></div>
+  <div class="upload-page__card">
+    <p class="eyebrow">Publishing your work</p>
+    <h2 id="upload-page-title">Uploading design</h2>
+    <p class="upload-page__stage" id="upload-page-stage">Preparing a secure upload…</p>
+    <strong class="upload-page__percent" id="upload-page-percent">0%</strong>
+    <div class="upload-page__track" id="upload-page-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="upload-page-fill"></span></div>
+    <p class="sub" id="upload-page-detail">Keep this tab open until your design is ready.</p>
+    <div class="upload-page__actions" id="upload-page-actions" hidden>
+      <a class="btn btn--primary btn--lg" id="view-published-design" href="#">View your design</a>
+      <button class="btn btn--quiet" id="retry-publish" type="button" hidden>Try again</button>
+    </div>
+    <button class="btn btn--quiet upload-page__cancel" id="cancel-upload" type="button">Cancel and keep editing</button>
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='team-credit.js') }}" defer></script>
+<script src="{{ url_for('static', filename='submit-draft.js') }}" defer></script>
+<script src="{{ url_for('static', filename='measurement-units.js') }}" defer></script>
+<script type="module">
+import { ModelViewer, webglAvailable } from "{{ url_for('static', filename='viewer.js') }}";
+import { initImagePaste } from "{{ url_for('static', filename='image-paste.js') }}";
+
+const panel      = document.getElementById('viewer-panel');
+const fileInput  = document.getElementById('model-file');
+const holder     = document.getElementById('viewer');
+const status     = document.getElementById('viewer-status');
+const actions    = document.getElementById('viewer-actions');
+const captureBtn = document.getElementById('capture');
+const resetBtn   = document.getElementById('reset-view');
+const dataURLIn  = document.getElementById('preview-data-url');
+const cameraIn   = document.getElementById('camera-json');
+const previewBox = document.getElementById('capture-preview');
+const previewImg = document.getElementById('capture-image');
+const form       = document.getElementById('submit-form');
+const uploadCertification = document.getElementById('upload-certification');
+const publishDesign = document.getElementById('publish-design');
+const modelUploadToken = document.getElementById('model-upload-token');
+const directModelUploads = {{ direct_model_uploads|tojson }};
+const attemptView = document.getElementById('attempt-view');
+const uploadProgress = document.getElementById('model-upload-progress');
+const uploadStage = document.getElementById('model-upload-stage');
+const uploadPercent = document.getElementById('model-upload-percent');
+const uploadTrack = document.getElementById('model-upload-track');
+const uploadFill = document.getElementById('model-upload-fill');
+const uploadPage = document.getElementById('upload-page');
+const uploadPageTitle = document.getElementById('upload-page-title');
+const uploadPageStage = document.getElementById('upload-page-stage');
+const uploadPagePercent = document.getElementById('upload-page-percent');
+const uploadPageTrack = document.getElementById('upload-page-track');
+const uploadPageFill = document.getElementById('upload-page-fill');
+const uploadPageDetail = document.getElementById('upload-page-detail');
+const uploadPageActions = document.getElementById('upload-page-actions');
+const viewPublishedDesign = document.getElementById('view-published-design');
+const retryPublish = document.getElementById('retry-publish');
+const cancelUploadButton = document.getElementById('cancel-upload');
+const isCadSource = (name) => /\.(step|stp)$/i.test(name || '');
+const AUTO_VIEW_BYTES = 350_000_000;
+const MAX_VIEW_BYTES = 500_000_000;
+const MAX_MODEL_BYTES = 2_500_000_000;
+let selectedModelFile = null;
+
+function syncUploadCertification() {
+  publishDesign.disabled = !uploadCertification.checked;
+}
+uploadCertification.addEventListener('change', syncUploadCertification);
+syncUploadCertification();
+
+// Accumulate picked and pasted pictures, keeping the file input in sync. Shared
+// with the quick-share form so both behave identically.
+initImagePaste({
+  input: document.getElementById('image-file'),
+  summary: document.getElementById('selected-images'),
+  count: document.getElementById('selected-images-count'),
+  list: document.getElementById('selected-images-list'),
+  clearButton: document.getElementById('clear-images'),
+  status: document.getElementById('image-paste-status'),
+});
+
+// Refresh autocomplete suggestions without leaving or reloading the form.
+const tagSearch = document.getElementById('tag-search');
+const tagSuggestions = document.getElementById('tag-suggestions');
+let tagTimer;
+tagSearch.addEventListener('input', () => {
+  clearTimeout(tagTimer);
+  tagTimer = setTimeout(async () => {
+    const query = tagSearch.value.split(',').pop().trim();
+    const data = await fetch(`{{ url_for('search_tags') }}?q=${encodeURIComponent(query)}`).then(r => r.json());
+    tagSuggestions.innerHTML = '';
+    data.tags.forEach(tag => { const option=document.createElement('option'); option.value=tag.name; tagSuggestions.appendChild(option); });
+  }, 120);
+});
+
+panel.hidden = false;
+if (!webglAvailable()) {
+  document.getElementById('fallback-heading').textContent = 'Upload a picture';
+  status.textContent = 'Your browser does not support the 3D viewer. Models can still be uploaded, but a preview picture is required.';
+} else {
+  let viewer = null;
+  let loaded = false;
+
+  const loadSelectedModel = async () => {
+    const file = selectedModelFile || fileInput.files[0];
+    if (!file) return;
+
+    attemptView.hidden = true;
+    holder.hidden = false;
+    status.textContent = 'Reading ' + file.name + '…';
+    if (!viewer) viewer = new ModelViewer(holder);
+
+    try {
+      await viewer.loadFile(file);
+      loaded = true;
+      actions.hidden = false;
+      status.textContent = 'Drag to rotate, scroll to zoom. Capture it when it looks right.';
+    } catch (err) {
+      loaded = false;
+      actions.hidden = true;
+      holder.hidden = true;
+      status.textContent = err.message + ' Try exporting an STL, or upload a picture instead.';
+    }
+  };
+
+  fileInput.addEventListener('change', async () => {
+    const file = fileInput.files[0];
+    loaded = false;
+    actions.hidden = true;
+    holder.hidden = true;
+    attemptView.hidden = true;
+    dataURLIn.value = '';
+    cameraIn.value = '';
+    previewBox.hidden = true;
+    if (!file) return;
+    if (file.size > MAX_MODEL_BYTES) {
+      fileInput.value = '';
+      status.textContent = 'That model is larger than the 2.5 GB upload limit.';
+      return;
+    }
+    // STEP is a boundary representation: solids, not triangles. Turning one
+    // into something drawable needs a CAD kernel this page does not carry, so
+    // it is stored for download and the preview has to come from a picture.
+    if (isCadSource(file.name)) {
+      document.getElementById('fallback-heading').textContent = 'Upload a required preview picture';
+      status.textContent = 'STEP is CAD source, not a mesh, so it cannot open in the browser viewer. It will be stored for people to download into their own CAD — add a preview picture below.';
+      return;
+    }
+    if (file.size > MAX_VIEW_BYTES) {
+      document.getElementById('fallback-heading').textContent = 'Upload a required preview picture';
+      status.textContent = 'This model will be stored for download, but files over 500 MB cannot open in the browser viewer. Add a preview picture below.';
+      return;
+    }
+    if (file.size > AUTO_VIEW_BYTES) {
+      status.textContent = 'This large model may freeze or crash this browser tab and could require several gigabytes of memory. You may attempt the preview, or upload a picture instead.';
+      attemptView.hidden = false;
+      return;
+    }
+    await loadSelectedModel();
+  });
+
+  attemptView.addEventListener('click', loadSelectedModel);
+
+  const capture = () => {
+    if (!loaded) return;
+    dataURLIn.value = viewer.capture();
+    cameraIn.value = JSON.stringify(viewer.getCameraState());
+    previewImg.src = dataURLIn.value;
+    previewBox.hidden = false;
+    status.textContent = 'Preview set. Re-capture any time before publishing.';
+  };
+
+  captureBtn.addEventListener('click', capture);
+  resetBtn.addEventListener('click', () => viewer.resetView());
+
+  // If someone orients a model but forgets to press the button, capture the
+  // current view on submit rather than rejecting the form.
+  form.addEventListener('submit', () => {
+    if (loaded && !dataURLIn.value) capture();
+  });
+}
+
+// In production, models begin uploading to private R2 quarantine as soon as
+// they are selected. Parsing and form entry can continue while these retryable
+// parts upload in the background. The ordinary multipart form remains the
+// local-development fallback when object storage is not configured.
+let directUploadComplete = false;
+let directUploadPromise = null;
+let uploadGeneration = 0;
+let submittingAfterUpload = false;
+let publishWaitInProgress = false;
+let uploadCanceled = false;
+let publishRequest = null;
+const activeUploadRequests = new Set();
+
+function setUploadProgress(stage, percent = 0, state = 'active') {
+  const bounded = Math.max(0, Math.min(100, Math.round(percent)));
+  uploadProgress.hidden = false;
+  uploadProgress.classList.toggle('is-ready', state === 'ready');
+  uploadProgress.classList.toggle('is-error', state === 'error');
+  uploadProgress.classList.toggle('is-publishing', state === 'publishing');
+  uploadStage.textContent = stage;
+  uploadPercent.textContent = state === 'publishing' ? '' : `${bounded}%`;
+  uploadFill.style.width = `${bounded}%`;
+  uploadTrack.setAttribute('aria-valuenow', String(bounded));
+  uploadPage.hidden = false;
+  uploadPageStage.textContent = stage;
+  uploadPagePercent.textContent = `${bounded}%`;
+  uploadPageFill.style.width = `${bounded}%`;
+  uploadPageTrack.setAttribute('aria-valuenow', String(bounded));
+}
+
+function resetDirectUpload() {
+  uploadGeneration += 1;
+  for (const xhr of activeUploadRequests) xhr.abort();
+  activeUploadRequests.clear();
+  directUploadComplete = false;
+  directUploadPromise = null;
+  submittingAfterUpload = false;
+  publishWaitInProgress = false;
+  modelUploadToken.value = '';
+  uploadProgress.hidden = true;
+}
+
+async function performDirectUpload(file, generation) {
+  const csrf = form.querySelector('[name="csrf_token"]')?.value;
+  setUploadProgress('Preparing secure model upload…', 0);
+  const authorization = await fetch({{ url_for('authorize_model_upload')|tojson }}, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json', 'X-CSRF-Token': csrf},
+    body: JSON.stringify({filename: file.name, size: file.size}),
+  });
+  const data = await authorization.json();
+  if (!authorization.ok) throw new Error(data.error || 'Upload authorization failed.');
+  if (generation !== uploadGeneration) throw new Error('Upload canceled.');
+
+  const progressByPart = new Map();
+  const completedParts = new Array(data.parts.length);
+  let nextPartIndex = 0;
+
+  const uploadPart = (part, attempt = 1) => new Promise((resolve, reject) => {
+    if (generation !== uploadGeneration) {
+      reject(new Error('Upload canceled.'));
+      return;
+    }
+    const start = (part.part_number - 1) * data.part_size;
+    const body = file.slice(start, Math.min(start + data.part_size, file.size));
+    const xhr = new XMLHttpRequest();
+    activeUploadRequests.add(xhr);
+    xhr.open('PUT', part.upload_url);
+    xhr.timeout = 3 * 60 * 1000;
+    xhr.upload.onprogress = (progress) => {
+      if (generation !== uploadGeneration) return;
+      progressByPart.set(part.part_number, progress.loaded);
+      const uploaded = [...progressByPart.values()].reduce((sum, value) => sum + value, 0);
+      setUploadProgress('Uploading model…', uploaded * 92 / file.size);
+    };
+    xhr.onload = () => {
+      activeUploadRequests.delete(xhr);
+      if (generation !== uploadGeneration) {
+        reject(new Error('Upload canceled.'));
+        return;
+      }
+      if (xhr.status >= 200 && xhr.status < 300) {
+        const etag = xhr.getResponseHeader('ETag');
+        if (!etag) {
+          reject(new Error('Storage did not expose the uploaded part identifier.'));
+          return;
+        }
+        progressByPart.set(part.part_number, body.size);
+        resolve({part_number: part.part_number, etag});
+      } else if (attempt < 3) {
+        setTimeout(() => uploadPart(part, attempt + 1).then(resolve, reject), 500 * attempt);
+      } else {
+        reject(new Error(`Storage rejected part ${part.part_number} (${xhr.status}).`));
+      }
+    };
+    xhr.onerror = () => {
+      activeUploadRequests.delete(xhr);
+      if (attempt < 3 && generation === uploadGeneration) {
+        setTimeout(() => uploadPart(part, attempt + 1).then(resolve, reject), 500 * attempt);
+      } else {
+        reject(new Error(`Part ${part.part_number} was interrupted three times.`));
+      }
+    };
+    xhr.ontimeout = () => {
+      activeUploadRequests.delete(xhr);
+      if (attempt < 3 && generation === uploadGeneration) {
+        progressByPart.delete(part.part_number);
+        setTimeout(() => uploadPart(part, attempt + 1).then(resolve, reject), 750 * attempt);
+      } else {
+        reject(new Error(`Part ${part.part_number} timed out three times.`));
+      }
+    };
+    xhr.onabort = () => {
+      activeUploadRequests.delete(xhr);
+      reject(new Error('Upload canceled.'));
+    };
+    xhr.send(body);
+  });
+
+  const worker = async () => {
+    while (nextPartIndex < data.parts.length) {
+      const index = nextPartIndex++;
+      completedParts[index] = await uploadPart(data.parts[index]);
+    }
+  };
+  await Promise.all(Array.from({length: Math.min(3, data.parts.length)}, worker));
+  if (generation !== uploadGeneration) throw new Error('Upload canceled.');
+
+  setUploadProgress('Verifying and preparing model…', 94);
+  const completion = await fetch({{ url_for('complete_model_upload')|tojson }}, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json', 'X-CSRF-Token': csrf},
+    body: JSON.stringify({upload_token: data.upload_token, parts: completedParts}),
+  });
+  const completionData = await completion.json();
+  if (!completion.ok) throw new Error(completionData.error || 'Storage could not complete the upload.');
+  if (generation !== uploadGeneration) throw new Error('Upload canceled.');
+
+  modelUploadToken.value = data.upload_token;
+  directUploadComplete = true;
+  setUploadProgress('Model uploaded. Saving your design…', 96, 'ready');
+}
+
+function startDirectUpload(file) {
+  if (!directModelUploads || !file) return null;
+  const generation = uploadGeneration;
+  const promise = performDirectUpload(file, generation);
+  directUploadPromise = promise;
+  promise.catch((error) => {
+    if (generation !== uploadGeneration) return;
+    directUploadPromise = null;
+    setUploadProgress(error.message + ' Click Publish to retry.', 0, 'error');
+  });
+  return promise;
+}
+
+fileInput.addEventListener('change', () => {
+  resetDirectUpload();
+  selectedModelFile = fileInput.files[0] || null;
+  // Upload only after Publish is pressed. Selecting a model should never
+  // consume bandwidth or leave an abandoned multipart upload behind.
+});
+
+function publishCompletedForm() {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    publishRequest = xhr;
+    xhr.open('POST', form.action || location.href);
+    xhr.timeout = 5 * 60 * 1000;
+    xhr.upload.onprogress = (progress) => {
+      if (!progress.lengthComputable || directModelUploads) return;
+      setUploadProgress('Uploading design…', progress.loaded * 96 / progress.total);
+    };
+    xhr.onload = () => {
+      publishRequest = null;
+      if (xhr.status >= 200 && xhr.status < 400 && /\/designs\/\d+(?:$|[?#])/.test(xhr.responseURL)) {
+        resolve(xhr.responseURL);
+        return;
+      }
+      const page = new DOMParser().parseFromString(xhr.responseText, 'text/html');
+      reject(new Error(page.querySelector('.flash--error')?.textContent?.trim() || `Publishing failed (${xhr.status}).`));
+    };
+    xhr.onerror = () => { publishRequest = null; reject(new Error('The connection was interrupted while publishing.')); };
+    xhr.ontimeout = () => { publishRequest = null; reject(new Error('Publishing took too long and was stopped.')); };
+    xhr.onabort = () => { publishRequest = null; reject(new Error('Publishing was canceled.')); };
+    xhr.send(new FormData(form));
+  });
+}
+
+function launchUploadFireworks() {
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const holder = document.getElementById('upload-fireworks');
+  holder.replaceChildren();
+  const colours = ['#ff7a3d', '#4ec98a', '#ffd166', '#60a5fa', '#f472b6'];
+  for (let i = 0; i < 42; i += 1) {
+    const spark = document.createElement('i');
+    spark.style.setProperty('--x', `${(Math.random() - .5) * 70}vw`);
+    spark.style.setProperty('--y', `${(Math.random() - .72) * 65}vh`);
+    spark.style.setProperty('--delay', `${Math.random() * .55}s`);
+    spark.style.setProperty('--colour', colours[i % colours.length]);
+    holder.appendChild(spark);
+  }
+}
+
+function showPublishError(error) {
+  publishWaitInProgress = false;
+  submittingAfterUpload = false;
+  uploadPage.classList.add('is-error');
+  uploadPageTitle.textContent = directUploadComplete ? 'Publishing interrupted' : 'Upload interrupted';
+  uploadPageStage.textContent = error.message || 'The upload could not finish.';
+  uploadPageDetail.textContent = directUploadComplete
+    ? 'Your model finished uploading and your form is still here. Try publishing again.'
+    : 'Your form is still here. Check your connection and try again.';
+  uploadPageActions.hidden = false;
+  viewPublishedDesign.hidden = true;
+  retryPublish.hidden = false;
+  syncUploadCertification();
+}
+
+// Cancelling only tears down what is in flight. The form itself is untouched
+// underneath this overlay, so every field, image, and model selection is still
+// there when the writer comes back to it.
+function cancelUpload() {
+  uploadCanceled = true;
+  publishWaitInProgress = false;
+  submittingAfterUpload = false;
+  if (publishRequest) publishRequest.abort();
+  if (!directUploadComplete) {
+    // A half-finished multipart upload cannot be resumed, so drop it and let
+    // Publish start it over. A model that already landed keeps its token.
+    uploadGeneration += 1;
+    for (const xhr of activeUploadRequests) xhr.abort();
+    activeUploadRequests.clear();
+    directUploadPromise = null;
+    modelUploadToken.value = '';
+    uploadProgress.hidden = true;
+  } else {
+    if (selectedModelFile && !fileInput.files.length) {
+      // Publishing clears the picker once the model is safely in storage; put
+      // the selection back so the form still reads as complete.
+      const transfer = new DataTransfer();
+      transfer.items.add(selectedModelFile);
+      fileInput.files = transfer.files;
+    }
+    uploadStage.textContent = 'Model uploaded and ready to publish.';
+  }
+  uploadPage.hidden = true;
+  uploadPage.classList.remove('is-error');
+  uploadPageActions.hidden = true;
+  retryPublish.hidden = true;
+  document.getElementById('upload-fireworks').replaceChildren();
+  syncUploadCertification();
+}
+
+cancelUploadButton.addEventListener('click', cancelUpload);
+
+form.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  if (publishWaitInProgress) return;
+  uploadCanceled = false;
+  publishWaitInProgress = true;
+  publishDesign.disabled = true;
+  uploadPage.classList.remove('is-error', 'is-complete');
+  uploadPageActions.hidden = true;
+  cancelUploadButton.hidden = false;
+  retryPublish.hidden = true;
+  viewPublishedDesign.hidden = false;
+  uploadPageTitle.textContent = 'Uploading design';
+  setUploadProgress('Preparing secure upload…', 0);
+  try {
+    if (directModelUploads && selectedModelFile && !directUploadComplete) {
+      await (directUploadPromise || startDirectUpload(selectedModelFile));
+    }
+    submittingAfterUpload = true;
+    if (directModelUploads && selectedModelFile) fileInput.value = '';
+    setUploadProgress('Publishing design…', 97, 'publishing');
+    const designUrl = await publishCompletedForm();
+    setUploadProgress('Upload complete', 100, 'ready');
+    uploadPage.classList.add('is-complete');
+    uploadPageTitle.textContent = 'Your design is live!';
+    uploadPageDetail.textContent = 'Everything finished successfully. Your design is ready to view.';
+    uploadPageActions.hidden = false;
+    cancelUploadButton.hidden = true;
+    viewPublishedDesign.href = designUrl;
+    launchUploadFireworks();
+  } catch (error) {
+    if (uploadCanceled) return;
+    showPublishError(error);
+  }
+});
+retryPublish.addEventListener('click', () => form.requestSubmit());
+window.addEventListener('beforeunload', (event) => {
+  if (!publishWaitInProgress || uploadPage.classList.contains('is-complete')) return;
+  event.preventDefault();
+});
+
+// Narrow the archetype list to the chosen season. Without JS every archetype
+// stays listed, which is still usable.
+const seasonSelect = document.getElementById('season-select');
+const archetypeSelect = document.getElementById('archetype-select');
+const programSelect = document.getElementById('program-select');
+
+function filterSeasons() {
+  let selectedStillValid = !seasonSelect.value;
+  for (const option of seasonSelect.options) {
+    const show = !option.value || option.dataset.program === programSelect.value;
+    option.hidden = !show;
+    if (show && option.selected) selectedStillValid = true;
+  }
+  if (!selectedStillValid) seasonSelect.value = '';
+  if (archetypeSelect) filterArchetypes();
+}
+
+function filterArchetypes() {
+  if (!archetypeSelect) return;
+  const season = seasonSelect.value;
+  let activeStillValid = false;
+
+  for (const option of archetypeSelect.options) {
+    const owner = option.dataset.season;
+    // Keep the placeholder, cross-season archetypes, and matches.
+    const show = !owner || !season || owner === season;
+    option.hidden = !show;
+    if (show && option.selected) activeStillValid = true;
+  }
+  if (!activeStillValid) archetypeSelect.value = '';
+}
+
+if (archetypeSelect) seasonSelect.addEventListener('change', filterArchetypes);
+programSelect.addEventListener('change', filterSeasons);
+const teamSelect = document.getElementById('team-select');
+if (teamSelect) teamSelect.addEventListener('change', () => {
+  const teamProgram = teamSelect.selectedOptions[0]?.dataset.program;
+  if (teamProgram) {
+    programSelect.value = teamProgram;
+    filterSeasons();
+  }
+});
+filterSeasons();
+
+const cadSoftware = document.querySelector('[data-cad-software]');
+const cadLinkField = document.querySelector('[data-cad-link-field]');
+function syncCadLinkField() {
+  // Download only means there is no document to link to.
+  cadLinkField.hidden = !cadSoftware.value || cadSoftware.value === 'download-only';
+}
+cadSoftware.addEventListener('change', syncCadLinkField);
+syncCadLinkField();
+</script>
+{% endblock %}

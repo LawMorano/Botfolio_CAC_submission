@@ -1,0 +1,23 @@
+{% extends "auth_base.html" %}
+{% block title %}Choose your interests &mdash; Botfolio{% endblock %}
+
+{% block auth_eyebrow %}{% with current_step=2 %}{% include "_account_setup_progress.html" %}{% endwith %}{% endblock %}
+{% block auth_heading %}What are you interested in?{% endblock %}
+{% block auth_sub %}<p class="sub">Pick one or more. This helps personalize what you discover on Botfolio.</p>{% endblock %}
+
+{% block auth_form %}
+  <form method="post" class="stack account-setup-form">
+    <fieldset class="setup-choice-group">
+      <legend class="sr-only">Interests and skills</legend>
+      <div class="chips checkbox-chips setup-interest-grid">
+        {% for interest in interest_choices %}
+          <label class="chip"><input type="checkbox" name="interests" value="{{ interest }}"{% if interest in selected_interests %} checked{% endif %}> {{ interest }}</label>
+        {% endfor %}
+      </div>
+    </fieldset>
+    <div class="setup-actions">
+      <a class="btn btn--quiet btn--lg" href="{{ url_for('account_setup') }}">Back</a>
+      <button class="btn btn--primary btn--lg" type="submit">Continue to role</button>
+    </div>
+  </form>
+{% endblock %}

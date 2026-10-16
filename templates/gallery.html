@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}Gallery &mdash; Botfolio{% endblock %}
+{% block page_class %}page--wide{% endblock %}
+
+{% block content %}
+<h1>Design gallery</h1>
+
+<form method="get" class="filters">
+  <input class="filters__q" name="q" value="{{ q }}"
+         placeholder="Search titles, descriptions, tags, and teams…" autofocus>
+  <details class="filter-menu">
+    <summary>Filter{% if program or season_id or design_type or chosen_functions or cad_software or tags %}<span class="filter-menu__count">Active</span>{% endif %}</summary>
+    <div class="filter-menu__panel">
+      <details class="filter-section" open><summary>Program</summary><div class="filter-options">
+        <label><input type="radio" name="program" value=""{% if not program %} checked{% endif %}>All programs</label>
+        {% for code, label in programs.items() %}<label><input type="radio" name="program" value="{{ code }}"{% if program == code %} checked{% endif %}>{{ label }}</label>{% endfor %}
+      </div></details>
+      <details class="filter-section" open><summary>Season</summary><div class="filter-options">
+        <label><input type="radio" name="season" value=""{% if not season_id %} checked{% endif %}>Any season</label>
+        {% for s in seasons %}<label><input type="radio" name="season" value="{{ s['id'] }}"{% if season_id == s['id'] %} checked{% endif %}>{{ programs[s['program']] }} &middot; {{ s['name'] }} <small>{{ s['year_label'] }}</small></label>{% endfor %}
+      </div></details>
+      <details class="filter-section" open><summary>Design type</summary><div class="filter-options"><label><input type="radio" name="type" value=""{% if not design_type %} checked{% endif %}>Any design type</label>{% for key,label in design_types.items() %}<label><input type="radio" name="type" value="{{ key }}"{% if design_type == key %} checked{% endif %}>{{ label }}</label>{% endfor %}</div></details>
+      <details class="filter-section"><summary>Functions</summary><div class="filter-options">{% for key,label in design_functions.items() %}<label><input type="checkbox" name="function" value="{{ key }}"{% if key in chosen_functions %} checked{% endif %}>{{ label }}</label>{% endfor %}</div></details>
+      <details class="filter-section"><summary>CAD software</summary><div class="filter-options">
+        <label><input type="radio" name="cad" value=""{% if not cad_software %} checked{% endif %}>Any CAD software</label>
+        {% for value, label in cad_software_choices.items() %}<label><input type="radio" name="cad" value="{{ value }}"{% if cad_software == value %} checked{% endif %}>{{ label }}</label>{% endfor %}
+      </div></details>
+      <details class="filter-section"{% if tags %} open{% endif %}><summary>Tags</summary><div class="filter-options">
+        {% for key, label, clause in tag_filters %}<label><input type="checkbox" name="tag" value="{{ key }}"{% if key in tags %} checked{% endif %}>{{ label }}</label>{% endfor %}
+      </div></details>
+      <div class="filter-menu__actions"><button class="btn btn--primary" type="submit">Apply filters</button>{% if program or season_id or design_type or chosen_functions or cad_software or tags %}<a class="btn btn--quiet" href="{{ url_for('gallery', q=q, sort=sort) }}">Clear filters</a>{% endif %}</div>
+    </div>
+  </details>
+  <label class="filters__sort">
+    <span class="sr-only">Sort by</span>
+    <select name="sort" aria-label="Sort designs" onchange="this.form.submit()">
+      {% for value, label in [('newest','Newest'),('liked','Most liked'),('viewed','Most viewed')] %}<option value="{{ value }}"{% if sort == value %} selected{% endif %}>{{ label }}</option>{% endfor %}
+    </select>
+  </label>
+</form>
+
+<p class="sub">
+  {{ total }} design{{ '' if total == 1 else 's' }}
+  {%- if q %} matching “{{ q }}”{% endif %}
+</p>
+
+{% if designs %}
+  <div class="grid">
+    {% for d in designs %}{% include "_design_card.html" %}{% endfor %}
+  </div>
+  {% if total_pages > 1 %}
+    <nav class="pagination" aria-label="Gallery pages">
+      {% if page > 1 %}<a class="pagination__link" href="{{ url_for('gallery', q=q, program=program, season=season_id, archetype=archetype_id, cad=cad_software, tag=tags, sort=sort, page=page-1) }}">Previous</a>{% endif %}
+      {% for number in page_numbers %}
+        {% if number %}<a class="pagination__link{% if number == page %} is-current{% endif %}" href="{{ url_for('gallery', q=q, program=program, season=season_id, archetype=archetype_id, cad=cad_software, tag=tags, sort=sort, page=number) }}"{% if number == page %} aria-current="page"{% endif %}>{{ number }}</a>{% else %}<span class="pagination__ellipsis">&hellip;</span>{% endif %}
+      {% endfor %}
+      {% if page < total_pages %}<a class="pagination__link" href="{{ url_for('gallery', q=q, program=program, season=season_id, archetype=archetype_id, cad=cad_software, tag=tags, sort=sort, page=page+1) }}">Next</a>{% endif %}
+    </nav>
+  {% endif %}
+{% else %}
+  <p class="empty">
+    Nothing matched. Try a broader search, or
+    <a href="{{ url_for('submit') }}">publish the first one</a>.
+  </p>
+{% endif %}
+{% endblock %}

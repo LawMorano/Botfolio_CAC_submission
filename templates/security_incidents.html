@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Security incidents &mdash; Botfolio{% endblock %}
+{% block content %}
+<p class="eyebrow">Administrator tools</p>
+<h1>Security incident register</h1>
+<p class="sub">Record the facts, response, notifications, and resolution of material security incidents. Enter “None” when a field does not apply.</p>
+
+{% macro incident_fields(item=None, prefix='new') %}
+  <div class="form-grid">
+    <label>Incident number<input name="incident_number" maxlength="80" required value="{{ item['incident_number'] if item else '' }}" placeholder="INC-2026-001"></label>
+    <label>Discovery date<input name="discovery_date" type="date" required value="{{ item['discovery_date'] if item else '' }}"></label>
+    <label>Discovered by<input name="discovered_by" maxlength="500" required value="{{ item['discovered_by'] if item else '' }}"></label>
+    <label>Resolution date<input name="resolution_date" type="date" value="{{ item['resolution_date'] or '' if item else '' }}"></label>
+  </div>
+  {% for name, label in [('systems_affected','Systems affected'),('information_affected','Information affected'),('actions_taken','Actions taken'),('credentials_rotated','Credentials rotated'),('vendors_contacted','Vendors contacted'),('notifications','Notifications'),('root_cause','Root cause'),('corrective_action','Corrective action')] %}
+    <label for="{{ prefix }}-{{ name }}">{{ label }}</label>
+    <textarea id="{{ prefix }}-{{ name }}" name="{{ name }}" maxlength="10000" rows="3" required>{{ item[name] if item else '' }}</textarea>
+  {% endfor %}
+{% endmacro %}
+
+<details class="panel" open>
+  <summary><strong>Record a new incident</strong></summary>
+  <form method="post" action="{{ url_for('security_incidents') }}">
+    {{ incident_fields() }}
+    <button class="btn btn--primary" type="submit">Record incident</button>
+  </form>
+</details>
+
+<section>
+  <div class="section-head"><h2>Incident history</h2><span class="chip">{{ incidents|length }}</span></div>
+  {% for incident in incidents %}
+    <details class="panel" id="incident-{{ incident['id'] }}">
+      <summary><strong>{{ incident['incident_number'] }}</strong> &middot; discovered {{ incident['discovery_date'] }} &middot; {{ 'Resolved ' ~ incident['resolution_date'] if incident['resolution_date'] else 'Open' }}</summary>
+      <form method="post" action="{{ url_for('update_security_incident', incident_id=incident['id']) }}">
+        {{ incident_fields(incident, 'incident-' ~ incident['id']) }}
+        <p class="sub">Created {{ incident['created_at'] }} by {{ incident['created_by_name'] }} &middot; Last updated {{ incident['updated_at'] }} by {{ incident['updated_by_name'] }}</p>
+        <button class="btn btn--primary" type="submit">Save changes</button>
+      </form>
+    </details>
+  {% else %}<p class="empty">No security incidents have been recorded.</p>{% endfor %}
+</section>
+{% endblock %}

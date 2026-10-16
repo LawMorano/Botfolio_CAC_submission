@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}Connect to a team &mdash; Botfolio{% endblock %}
+
+{% block content %}
+<section class="onboarding">
+  <ol class="onboarding__steps" aria-label="Onboarding progress">
+    <li class="is-done">Profile</li>
+    <li class="is-current">Team</li>
+    <li>Explore</li>
+  </ol>
+
+  <p class="eyebrow">Step 2 of 3 &middot; Connect to a team</p>
+  <h1>What would you like to do next?</h1>
+  <p class="sub">Your personal profile is ready. A team page is separate &mdash; it represents a whole robotics team and publishes the team&rsquo;s designs.</p>
+
+  {% if declared_number %}
+  <div class="panel onboarding-declared">
+    <p class="eyebrow">Your team &middot; #{{ declared_number }}</p>
+    {% if declared_state == 'joinable' %}
+      <h2>Request to join Team {{ declared_number }}</h2>
+      <p class="sub">{{ declared_team['name'] }} is on Botfolio. Ask the team&rsquo;s owner to add you as a member.</p>
+      <form method="post" action="{{ url_for('request_team_membership', number=declared_number) }}" class="inline">
+        <button class="btn btn--primary btn--lg" type="submit">Request to join Team {{ declared_number }}</button>
+      </form>
+    {% elif declared_state == 'pending' %}
+      <h2>Your request to join Team {{ declared_number }} is pending</h2>
+      <p class="sub">The owner of {{ declared_team['name'] }} will review it. <a href="{{ url_for('notifications') }}">Check your notifications.</a></p>
+    {% elif declared_state == 'member' %}
+      <h2>You&rsquo;re on Team {{ declared_number }}</h2>
+      <p class="sub">You&rsquo;re already a member of <a href="{{ url_for('team_detail', program='ftc', number=declared_number) }}">{{ declared_team['name'] }}</a>.</p>
+    {% elif declared_state == 'unowned' %}
+      <h2>Team {{ declared_number }} is on Botfolio</h2>
+      <p class="sub">It doesn&rsquo;t have an owner yet &mdash; you can claim it and become its owner.</p>
+      <a class="btn btn--primary btn--lg" href="{{ url_for('team_detail', program='ftc', number=declared_number) }}">View Team {{ declared_number }}</a>
+    {% else %}
+      <h2>Team {{ declared_number }} isn&rsquo;t on Botfolio yet</h2>
+      <p class="sub">Be the first to put your team here &mdash; create or claim its page.</p>
+      <a class="btn btn--primary btn--lg" href="{{ url_for('team_detail', program='ftc', number=declared_number) }}">Set up Team {{ declared_number }}</a>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  {% include "_data_model_diagram.html" %}
+
+  <div class="onboarding-choices">
+    <a class="onboarding-choice" href="{{ url_for('team_list') }}">
+      <h2>Join an existing team</h2>
+      <p>Search for your robotics team by number or name and ask to join.</p>
+    </a>
+    <a class="onboarding-choice" href="{{ url_for('team_list') }}#claim">
+      <h2>Create or claim my team</h2>
+      <p>Set up your team&rsquo;s page and become its owner.</p>
+    </a>
+    <a class="onboarding-choice onboarding-choice--quiet" href="{{ url_for('onboarding_explore') }}">
+      <h2>Just explore Botfolio</h2>
+      <p>Skip for now &mdash; you can join or create a team anytime.</p>
+    </a>
+  </div>
+</section>
+{% endblock %}

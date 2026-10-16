@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block title %}Teams &mdash; Botfolio{% endblock %}
+{% block page_class %}page--wide{% endblock %}
+
+{% block content %}
+<aside class="panel founding-callout"><strong>{{ founding_claimed }} of {{ founding_limit }} FTC Founding Team spots claimed</strong> <a href="{{ url_for('founding_50') }}">View the permanent Founding 50</a></aside>
+<h1>Teams</h1>
+<p class="sub">Search for any robotics team by number or name, or create your team&rsquo;s Botfolio page.</p>
+<p class="sub">Team membership on Botfolio is based on invitations from other team members and is not independently verified with FIRST&reg;, VEX Robotics&reg;, or any other robotics competition organization referenced on the platform.</p>
+
+<form method="get" class="filters" role="search">
+  <label class="sr-only" for="team-q">Search teams</label>
+  <input class="filters__q" id="team-q" name="q" value="{{ q }}" placeholder="Search by team number or name" maxlength="80" autofocus>
+  <select name="program" aria-label="Robotics program">
+    <option value=""{% if not selected_program %} selected{% endif %}>All programs</option>
+    {% for code, label in programs.items() %}<option value="{{ code }}"{% if selected_program == code %} selected{% endif %}>{{ label }}</option>{% endfor %}
+  </select>
+  <button class="btn btn--primary" type="submit">Search</button>
+</form>
+
+{% if results is not none %}
+  {% if results %}
+    <div class="team-directory-grid">
+      {% for t in results %}
+        <a class="team-directory-card" href="{{ url_for('team_detail', program=t['program'], number=t['number']) }}">
+          <div class="team-directory-card__logo">
+            {% if t['banner_image'] %}<img src="{{ asset_url('uploads', t['banner_image']) }}" alt="{{ t['name'] }} banner" loading="lazy">{% else %}<span aria-hidden="true">{{ t['name'][0]|upper }}</span>{% endif %}
+          </div>
+          <div class="team-directory-card__body">
+            <p class="eyebrow">{{ programs[t['program']] }} Team {{ t['number'] }}</p>
+            <h2>{{ t['name'] }}</h2>
+            <p class="sub">{{ t['location'] or 'Location not listed' }}</p>
+            <p class="team-directory-card__count">{% if t['design_count'] is not none %}{{ t['design_count'] }} design{{ '' if t['design_count'] == 1 else 's' }}{% else %}View team{% endif %}</p>
+          </div>
+        </a>
+      {% endfor %}
+    </div>
+    <p class="sub muted">FTC registry results come from FTC Scout; FRC results come from the official FIRST&reg; Events API. Open a team to view or claim its page.</p>
+  {% elif api_error %}
+    <p class="empty">Couldn&rsquo;t reach the selected team registry right now. Please try again in a moment.</p>
+  {% else %}
+    <p class="empty">No teams match &ldquo;{{ q }}&rdquo;. For FRC, try the exact team number.</p>
+  {% endif %}
+{% else %}
+  {% if current_user %}
+    <div class="panel" id="claim">
+      <h2>Create or Claim a Team</h2>
+      <p class="sub">A team page represents a whole robotics team &mdash; separate from your personal profile. Enter your team&rsquo;s number to create its page or claim an existing one.</p>
+    <form method="post" class="row row--form">
+      <select name="program" required aria-label="Robotics program">{% for code, label in programs.items() %}<option value="{{ code }}"{% if selected_program == code %} selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+        <input name="number" type="number" min="1" placeholder="Team number" required>
+        <input name="name" placeholder="Team name" required maxlength="80">
+        <input name="region" placeholder="Region (optional)" maxlength="80">
+        <button class="btn btn--primary" type="submit">Create or Claim a Team</button>
+      </form>
+    </div>
+  {% else %}
+    <p class="sub"><a href="{{ url_for('login') }}">Sign in</a> to create or claim a team.</p>
+  {% endif %}
+
+  {% if teams %}
+    <div class="team-directory-grid">
+      {% for t in teams %}
+        <a class="team-directory-card" href="{{ url_for('team_detail', program=t['program'], number=t['number']) }}">
+          <div class="team-directory-card__logo">
+            {% if t['banner_image'] %}<img src="{{ asset_url('uploads', t['banner_image']) }}" alt="{{ t['name'] }} banner" loading="lazy">{% else %}<span aria-hidden="true">{{ t['name'][0]|upper }}</span>{% endif %}
+          </div>
+          <div class="team-directory-card__body">
+            <p class="eyebrow">{{ programs[t['program']] }} Team {{ t['number'] }}</p>
+            <h2>{{ t['name'] }}</h2>
+            <p class="sub">{{ t['region'] or 'Region not listed' }}</p>
+            <p class="team-directory-card__count">{{ t['design_count'] }} design{{ '' if t['design_count'] == 1 else 's' }}</p>
+            {% if t['is_founding'] %}<span class="founding-team-badge">Founding Team</span>{% endif %}
+          </div>
+        </a>
+      {% endfor %}
+    </div>
+    <p class="sub">Team pages make it easier to find designs, contributors, and work shared by each team.</p>
+  {% else %}
+    <p class="empty">No teams yet. Claim yours and get things started.</p>
+  {% endif %}
+{% endif %}
+{% endblock %}

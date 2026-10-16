@@ -1,0 +1,9 @@
+<nav class="account-setup-progress" aria-label="Account setup progress">
+  <p>Set up my account</p>
+  <ol>
+    <li class="{% if current_step == 1 %}is-current{% elif current_step > 1 %}is-done{% endif %}"{% if current_step == 1 %} aria-current="step"{% endif %}><span>1</span>Profile</li>
+    <li class="{% if current_step == 2 %}is-current{% elif current_step > 2 %}is-done{% endif %}"{% if current_step == 2 %} aria-current="step"{% endif %}><span>2</span>Interests</li>
+    <li class="{% if current_step == 3 %}is-current{% elif current_step > 3 %}is-done{% endif %}"{% if current_step == 3 %} aria-current="step"{% endif %}><span>3</span>Role</li>
+    <li class="{% if current_step == 4 %}is-current{% endif %}"{% if current_step == 4 %} aria-current="step"{% endif %}><span>4</span>Team</li>
+  </ol>
+</nav>

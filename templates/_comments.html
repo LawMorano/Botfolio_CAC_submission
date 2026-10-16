@@ -1,0 +1,27 @@
+{% macro render_comment(comment, is_reply=false) %}
+  {% set can_moderate = current_user and (current_user['is_admin'] or current_user['id'] == design['user_id']) %}
+  {% if comment['status'] != 'hidden' or can_moderate %}
+  <article class="comment{% if is_reply %} comment--reply{% endif %}{% if comment['status'] == 'hidden' %} comment--hidden{% endif %}" id="comment-{{ comment['id'] }}">
+    <div class="comment__avatar">{% if comment['profile_image'] %}<img src="{{ asset_url('uploads', comment['profile_image']) }}" alt="">{% else %}{{ comment['username'][0]|upper }}{% endif %}</div>
+    <div class="comment__body">
+      <header>{% if comment['deleted_at'] %}<strong>Deleted User</strong>{% else %}<a href="{{ url_for('profile', username=comment['username']) }}"><strong>{{ comment['username'] }}</strong></a>{% endif %}{% if comment['team_number'] %}<a class="chip" href="{{ url_for('team_detail', program=comment['team_program'], number=comment['team_number']) }}">{{ comment['team_program']|upper }} Team {{ comment['team_number'] }}</a>{% endif %}<span>{{ comment['created_at'] }}{% if comment['updated_at'] != comment['created_at'] %} &middot; edited{% endif %}</span></header>
+      {% if comment['status'] == 'deleted' %}<p class="comment__removed">Comment removed.</p>{% else %}<p>{{ comment['body'] }}</p>{% endif %}
+      {% if comment['status'] != 'deleted' %}<div class="comment__actions">
+        {% if current_user and current_user['id'] != comment['user_id'] %}<form method="post" action="{{ url_for('toggle_comment_helpful', comment_id=comment['id']) }}"><button class="text-button" type="submit" aria-pressed="{{ 'true' if comment['viewer_helpful'] else 'false' }}">Helpful{% if comment['helpful_count'] %} · {{ comment['helpful_count'] }}{% endif %}</button></form>{% elif comment['helpful_count'] %}<span class="sub">{{ comment['helpful_count'] }} helpful</span>{% endif %}
+        {% if current_user and not is_reply %}<details><summary>Reply</summary><form method="post" action="{{ url_for('add_comment', design_id=design['id']) }}"><input type="hidden" name="parent_id" value="{{ comment['id'] }}"><textarea name="body" rows="3" maxlength="2000" required placeholder="Add a constructive reply…"></textarea><button class="btn btn--primary" type="submit">Post reply</button></form></details>{% endif %}
+        {% if current_user and (current_user['id'] == comment['user_id'] or current_user['is_admin']) %}{% if comment['can_edit'] %}<details><summary>Edit</summary><form method="post" action="{{ url_for('edit_comment', comment_id=comment['id']) }}"><textarea name="body" rows="3" maxlength="2000" required>{{ comment['body'] }}</textarea><button class="btn" type="submit">Save</button></form></details>{% endif %}<form method="post" action="{{ url_for('delete_comment', comment_id=comment['id']) }}" onsubmit="return confirm('Delete this comment?')"><button class="text-button" type="submit">Delete</button></form>{% endif %}
+        {% if can_moderate %}<form method="post" action="{{ url_for('toggle_comment_visibility', comment_id=comment['id']) }}"><button class="text-button" type="submit">{{ 'Restore' if comment['status'] == 'hidden' else 'Hide' }}</button></form>{% if comment['report_count'] %}<span class="report-flag">{{ comment['report_count'] }} report{{ '' if comment['report_count'] == 1 else 's' }}</span>{% endif %}{% endif %}
+        <a class="text-button" href="{{ url_for('report_content', type='comment', id=comment['id'], url=url_for('design_detail', design_id=design['id'], _external=True) ~ '#comment-' ~ comment['id']) }}">Report</a>
+      </div>{% endif %}
+    </div>
+  </article>
+  {% endif %}
+{% endmacro %}
+
+<section class="detail__comments panel" id="comments">
+  {% set viewer_can_moderate = current_user and (current_user['is_admin'] or current_user['id'] == design['user_id']) %}
+  <div class="section-head"><div><p class="eyebrow">Ask the Builder</p><h2>Discussion</h2></div><span class="sub">{{ design['comment_count'] }} contribution{{ '' if design['comment_count'] == 1 else 's' }}</span></div>
+  <p class="sub">Keep comments constructive. Do not post harassment, personal information, unsafe material, spam, or content you do not have permission to share. See the <a href="{{ url_for('community_rules') }}">Community Rules</a>.</p>
+  {% if current_user %}<form class="comment-form" method="post" action="{{ url_for('add_comment', design_id=design['id']) }}"><label for="new-comment">Ask the Builder</label><textarea id="new-comment" name="body" rows="4" maxlength="2000" required placeholder="Ask a technical question or share constructive feedback..."></textarea><div class="row"><button class="btn btn--primary" type="submit">Post to discussion</button><span class="sub">Maximum 2,000 characters</span></div></form>{% else %}<p class="note"><a href="{{ url_for('login', next=request.path) }}">Sign in</a> to join the discussion.</p>{% endif %}
+  <div class="comment-thread">{% for comment in comments %}{% if comment['status'] != 'hidden' or viewer_can_moderate %}{{ render_comment(comment) }}{% for reply in replies.get(comment['id'], []) %}{{ render_comment(reply, true) }}{% endfor %}{% endif %}{% else %}<p class="empty">No comments yet. Start the first engineering discussion.</p>{% endfor %}</div>
+</section>

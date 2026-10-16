@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Copyright and Takedown Policy &mdash; Botfolio{% endblock %}
+{% block content %}
+<article class="prose legal-page">
+<h1>Copyright and Takedown Policy</h1>
+<p class="sub">Effective Date: August 5, 2026</p>
+<p>Botfolio respects the intellectual-property rights of others and expects users to upload only material they created or are authorized to share.</p>
+<h2>Reporting Copyright Infringement</h2>
+<p>If you are a copyright owner or are authorized to act on behalf of one, you may submit a copyright infringement notice to <a href="mailto:copyright@botfoliohq.com">copyright@botfoliohq.com</a>. You do not need a Botfolio account to submit a copyright complaint.</p>
+<p>Your notice should include your name and contact information, including a mailing address, telephone number, and email address; identification of the copyrighted work you believe has been infringed; the exact Botfolio URL or enough information for us to locate the material; a statement that you have a good-faith belief that the disputed use is not authorized by the copyright owner, its agent, or the law; a statement that the information in your notice is accurate and, under penalty of perjury, that you are the copyright owner or authorized to act on behalf of the owner; and your physical or electronic signature. </p>
+<p>If multiple copyrighted works are involved, you may provide a representative list of those works where permitted by applicable law.</p>
+<h2>What Botfolio May Do</h2>
+<p>After receiving a substantially complete copyright notice, Botfolio may promptly remove or disable access to the identified material, notify the user who submitted it, request additional information where necessary, preserve relevant records, and take appropriate action under our repeat-infringer policy. </p>
+<p>Removing or restricting content in response to a complaint does not mean Botfolio has determined which party ultimately owns the material or whether infringement has legally occurred.</p>
+<h2>Counter-Notices</h2>
+<p>If your content was removed or disabled because of a copyright complaint and you believe the removal resulted from a mistake or misidentification, you may submit a counter-notice to <a href="mailto:copyright@botfoliohq.com">copyright@botfoliohq.com</a>.</p>
+<p>A counter-notice should include your physical or electronic signature; identification of the material that was removed or disabled and where it appeared before removal; a statement under penalty of perjury that you have a good-faith belief that the material was removed or disabled because of mistake or misidentification; your name, address, and telephone number; and the consent to federal court jurisdiction and acceptance of service of process required by applicable copyright law. </p>
+<p>Botfolio may provide a valid counter-notice to the person who submitted the original copyright complaint. Unless that person notifies Botfolio that a court action has been filed seeking to restrain the disputed activity, Botfolio may restore the material in accordance with the timing required by the Digital Millennium Copyright Act, generally between 10 and 14 business days after receiving a valid counter-notice. </p>
+<h2>Repeat Infringement</h2>
+<p>Botfolio maintains a policy providing for termination, in appropriate circumstances, of users who repeatedly infringe copyrights or other intellectual-property rights.</p>
+<p>Botfolio may consider the circumstances and history of reported infringement when determining whether an account should be restricted, suspended, or terminated.</p>
+<h2>False or Misleading Notices</h2>
+<p>Copyright notices and counter-notices are legal communications. Do not knowingly make false or materially misleading claims about whether content infringes a copyright or whether material was removed because of mistake or misidentification.</p>
+<h2>Other Intellectual-Property or Rights Complaints</h2>
+<p>This policy is intended primarily for copyright complaints. Concerns involving trademarks, privacy, impersonation, confidential information, ownership disputes, or other rights may be submitted through <a href="{{ url_for('report_content') }}">Report Content</a> or sent to <a href="mailto:legal@botfoliohq.com">legal@botfoliohq.com</a>.</p>
+<h2>Contact</h2>
+<p>Copyright notices, counter-notices, and copyright questions may be sent to:</p>
+<h2>Botfolio LLC</h2>
+<p><strong>Copyright:</strong> <a href="mailto:copyright@botfoliohq.com">copyright@botfoliohq.com</a></p>
+<nav class="legal-links" aria-label="Related policies">
+<a href="{{ url_for('terms') }}">Terms of Use</a>
+<a href="{{ url_for('privacy') }}">Privacy Policy</a>
+<a href="{{ url_for('community_rules') }}">Community Rules</a>
+<a href="{{ url_for('copyright_policy') }}">Copyright &amp; Takedowns</a>
+<a href="{{ url_for('report_content') }}">Report Content</a>
+<a href="{{ url_for('contact') }}">Contact</a>
+</nav>
+</article>
+{% endblock %}

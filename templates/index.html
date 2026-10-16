@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% block title %}Botfolio{% endblock %}
+
+{% block content %}
+<section class="hero">
+  <div class="hero__copy">
+    <h1>Build better robots by seeing how others built theirs.</h1>
+    <p class="hero__lede">Explore CAD, mechanisms and complete robots shared by robotics teams.</p>
+    <div class="hero__actions">
+      <a class="btn btn--primary btn--lg" href="{{ url_for('gallery') }}">Browse designs</a>
+      <a class="btn btn--lg" href="{{ url_for('submit') }}">Share a design</a>
+    </div>
+  </div>
+
+  {# The week's standout designs, previewed right under the intro as a
+     merry-go-round coverflow: three cards on the front — a sharp, clickable
+     centre and two blurred neighbours — with the rest spun to a hidden back
+     seat. dotw-carousel.js swings them on navigate. It ships centre-first, so a
+     failed or slow script degrades to a single static card; reduced motion
+     snaps instead of swinging. #}
+  {% if hero_slides %}
+  <div class="hero__preview dotw">
+    <p class="eyebrow">Designs of the week</p>
+    <div class="dotw-carousel{% if hero_slides|length == 1 %} is-single{% endif %}"
+         data-dotw-carousel tabindex="-1"
+         aria-roledescription="carousel" aria-label="Designs of the week">
+      <div class="dotw-stage">
+        {% for d in hero_slides %}
+        {% set is_3d = model_is_viewable(d['model_filename'], d['model_size_bytes']) %}
+        <a class="dotw-card{% if loop.first %} is-center{% endif %}"
+           href="{{ url_for('design_detail', design_id=d['id']) }}"
+           data-dotw-card
+           role="group" aria-roledescription="slide"
+           aria-label="{{ loop.index }} of {{ hero_slides|length }}: {{ d['title'] }}"
+           {% if not loop.first %}aria-hidden="true" tabindex="-1"{% endif %}>
+          <span class="dotw-card__frame">
+            <img class="dotw-card__img" src="{{ asset_url('uploads', d['image_filename']) }}"
+                 alt="{{ d['title'] }}" {{ 'loading=eager' if loop.first else 'loading=lazy' }}>
+            {% if is_3d %}<span class="dotw-card__badge">3D</span>{% endif %}
+            {% if d['competition_tested'] %}<span class="dotw-card__badge dotw-card__badge--tested" title="Competition tested" aria-label="Competition tested">&#10003;</span>{% endif %}
+          </span>
+          <span class="dotw-card__cap">
+            <strong>{{ d['title'] }}</strong>
+            {# Credit line. An admin upload with no team credited is curated, not
+               attributed — show nothing rather than the BotfolioAdmin account. A
+               real team or member still shows, as does the season on its own. #}
+            {% set show_credit = d['username'] and not d['uploaded_by_admin'] %}
+            {% if d['team_number'] or show_credit or d['season_name'] %}
+            <small>{% if d['team_number'] %}Team {{ d['team_number'] }}{% if d['team_name'] %} &middot; {{ d['team_name'] }}{% endif %}{% elif show_credit %}{{ d['username'] }}{% endif %}{% if d['season_name'] %}{% if d['team_number'] or show_credit %} &middot; {% endif %}{{ d['season_name'] }}{% endif %}</small>
+            {% endif %}
+          </span>
+        </a>
+        {% endfor %}
+      </div>
+      {% if hero_slides|length > 1 %}
+      <div class="dotw-controls">
+        <button class="dotw-arrow" type="button" data-dotw-prev aria-label="Previous design">&larr;</button>
+        <button class="dotw-arrow" type="button" data-dotw-next aria-label="Next design">&rarr;</button>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+</section>
+
+<section class="panel founding-callout founding-callout--gold"><div><p class="eyebrow">Founding 50</p><h2>{{ founding_claimed }} of 50 Founding Team spots claimed</h2><p>Register a named team and publish a legitimate team design to qualify.</p></div><a class="btn founding-callout__btn" href="{{ url_for('founding_50') }}">View the Founding 50</a></section>
+
+{% if designs_of_week %}
+<section class="home-featured">
+  <div class="home-featured__heading">
+    <h2>Designs of the Week</h2>
+  </div>
+  <div class="grid">
+    {% for d in designs_of_week %}{% include "_design_card.html" %}{% endfor %}
+  </div>
+</section>
+{% endif %}
+
+<section class="home-newest">
+  <div class="section-head">
+    <h2>Newest designs</h2>
+    <a href="{{ url_for('gallery') }}">See all &rarr;</a>
+  </div>
+
+  {% if designs %}
+    <div class="grid">
+      {% for d in designs %}{% include "_design_card.html" %}{% endfor %}
+    </div>
+  {% else %}
+    <p class="empty">
+      The gallery is just getting started. <a href="{{ url_for('submit') }}">Share the first design.</a>
+    </p>
+  {% endif %}
+</section>
+
+<section class="panel founding-callout home-about-callout">
+  <div>
+    <p class="eyebrow">About Botfolio</p>
+    <h2>Built for robotics teams that learn by sharing.</h2>
+    <p>See why Botfolio exists, how community designs work, and what we are building for robotics students and teams.</p>
+  </div>
+  <a class="btn btn--primary" href="{{ url_for('about') }}">Learn about Botfolio</a>
+</section>
+{% endblock %}
+
+{% block scripts %}
+{# The hero Designs-of-the-week merry-go-round: three cards on the front, the
+   rest spun behind. Arrows/arrow-keys/side-click driven; reduced motion snaps
+   instead of swinging, and it degrades to the centre card without the script. #}
+<script src="{{ url_for('static', filename='dotw-carousel.js', v='20260904-static-controls') }}" defer></script>
+{% endblock %}

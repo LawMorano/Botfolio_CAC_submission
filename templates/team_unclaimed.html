@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% set team = lookup.team %}
+{% block title %}{{ program_label }} Team {{ number }} &mdash; Botfolio{% endblock %}
+{% block meta_description %}{% if lookup.state == 'found' %}{{ team.name }} ({{ program_label }} #{{ number }}) does not have a Botfolio page yet.{% else %}Team {{ number }} on Botfolio.{% endif %}{% endblock %}
+
+{% block content %}
+<section class="team-unclaimed">
+  {% if lookup.state == 'found' %}
+    <h1>{{ team.name }}</h1>
+    <p class="sub">
+      {{ program_label }} team {{ number }}{% if team.location %} &middot; {{ team.location }}{% endif %}{% if team.rookie_year %} &middot; rookie year {{ team.rookie_year }}{% endif %}.
+      {% if team.website %}<a href="{{ team.website }}" rel="noopener noreferrer" target="_blank">Team website</a>{% endif %}
+    </p>
+    <p class="sub">
+      This team isn&rsquo;t on Botfolio yet. Team pages are made by the teams
+      themselves &mdash; Botfolio does not import rosters and is not affiliated
+      with FIRST&reg;, VEX Robotics&reg;, or any other robotics competition
+      organization. Team details shown here come from the {{ program_label }} registry.
+    </p>
+
+    {% if current_user %}
+      <p class="sub">On this team? Claim it to start its Botfolio page.</p>
+      <form method="post" action="{{ url_for('create_team') }}" class="row row--form">
+        <input type="hidden" name="program" value="{{ program }}">
+        <input type="hidden" name="number" value="{{ number }}">
+        <input name="name" value="{{ team.name }}" required maxlength="80">
+        <input name="region" value="{{ team.location }}" placeholder="Region (optional)" maxlength="80">
+        <button class="btn btn--primary" type="submit">Claim team {{ number }}</button>
+      </form>
+      <p class="sub">
+        The first person to claim a team becomes its admin and gets an invite code
+        teammates use to join.
+      </p>
+    {% else %}
+      <p class="sub">
+        <a href="{{ url_for('login') }}">Sign in</a> or
+        <a href="{{ url_for('register') }}">create an account</a> to claim team
+        {{ number }}.
+      </p>
+    {% endif %}
+
+  {% elif lookup.state == 'error' %}
+    <h1>Couldn&rsquo;t look up team {{ number }}</h1>
+    <p class="sub">
+      The {{ program_label }} team registry couldn&rsquo;t be reached just now, so we can&rsquo;t
+      confirm team {{ number }}. Please try again in a moment.
+    </p>
+
+  {% else %}
+    <h1>No {{ program_label }} team {{ number }}</h1>
+    <p class="sub">
+      There&rsquo;s no {{ program_label }} team with the number {{ number }}. Check the number
+      and try again.
+    </p>
+  {% endif %}
+
+  <p class="sub"><a href="{{ url_for('team_list') }}">&larr; Back to all teams</a></p>
+</section>
+{% endblock %}

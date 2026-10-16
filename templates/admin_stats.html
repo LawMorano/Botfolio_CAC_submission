@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Growth stats &mdash; Botfolio{% endblock %}
+{% block content %}
+<p class="eyebrow">Administrator tools</p>
+<h1>Growth stats</h1>
+<p class="sub">New sign-ups at a glance. These are live counts &mdash; they refresh every time this page loads.</p>
+
+<section class="stat-block">
+  <div class="section-head"><h2>User accounts</h2><span class="chip">{{ stats['users_total'] }} total</span></div>
+  <div class="stat-grid">
+    <div class="stat-card"><span class="stat-card__num">{{ stats['users_total'] }}</span><span class="stat-card__label">Active accounts</span></div>
+    <div class="stat-card"><span class="stat-card__num">{{ stats['users_1d'] }}</span><span class="stat-card__label">New in last 24 hours</span></div>
+    <div class="stat-card"><span class="stat-card__num">{{ stats['users_7d'] }}</span><span class="stat-card__label">New in last 7 days</span></div>
+    <div class="stat-card"><span class="stat-card__num">{{ stats['users_30d'] }}</span><span class="stat-card__label">New in last 30 days</span></div>
+  </div>
+</section>
+
+<section class="stat-block">
+  <div class="section-head"><h2>Team accounts</h2><span class="chip">{{ stats['teams_total'] }} total</span></div>
+  <div class="stat-grid">
+    <div class="stat-card"><span class="stat-card__num">{{ stats['teams_total'] }}</span><span class="stat-card__label">Claimed teams</span></div>
+    <div class="stat-card"><span class="stat-card__num">{{ stats['teams_1d'] }}</span><span class="stat-card__label">New in last 24 hours</span></div>
+    <div class="stat-card"><span class="stat-card__num">{{ stats['teams_7d'] }}</span><span class="stat-card__label">New in last 7 days</span></div>
+    <div class="stat-card"><span class="stat-card__num">{{ stats['teams_30d'] }}</span><span class="stat-card__label">New in last 30 days</span></div>
+  </div>
+  <p class="sub stat-note">Team accounts are profiles a team has claimed; new-team windows are by account-creation date.</p>
+</section>
+{% endblock %}

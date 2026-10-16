@@ -1,0 +1,50 @@
+{% extends "auth_base.html" %}
+{% block title %}Create an account &mdash; Botfolio{% endblock %}
+{% block auth_class %}auth--signup{% endblock %}
+
+{% block auth_heading %}Create an account{% endblock %}
+{% block auth_sub %}<p class="sub">You need one to publish designs, add tags, and vote.</p>{% endblock %}
+
+{% block auth_form %}
+  <form method="post" class="stack">
+    <input type="hidden" name="next" value="{{ request.args.get('next', '') }}">
+    <div class="hp-field" aria-hidden="true">
+      <label>Company<input name="company" type="text" tabindex="-1" autocomplete="off"></label>
+    </div>
+    <label>
+      Username
+      <input name="username" required minlength="3" maxlength="24"
+             pattern="[A-Za-z0-9_.\-]+" autocomplete="username" autofocus>
+      <small>3&ndash;24 characters. Letters, numbers, and <code>_ . -</code></small>
+    </label>
+    <label>
+      Email
+      <input name="email" type="email" required autocomplete="email">
+    </label>
+    <label>
+      Password
+      <div class="password-field"><input id="register-password" name="password" type="password" required minlength="8" autocomplete="new-password"><button class="btn btn--quiet" type="button" data-password-toggle="register-password" aria-label="Show password" aria-pressed="false">Show</button></div>
+      <small>At least 8 characters.</small>
+    </label>
+    <fieldset class="panel legal-consent"><legend>Account Requirements</legend>
+      <label class="check-row"><input type="checkbox" name="age_13_confirmed" value="yes" required><span>I confirm that I am at least 13 years old.</span></label>
+      <label class="check-row"><input type="checkbox" name="legal_policies_accepted" value="yes" required><span>I have read and agree to the <a href="{{ url_for('terms') }}" target="_blank" rel="noopener">Terms of Use</a> and <a href="{{ url_for('privacy') }}" target="_blank" rel="noopener">Privacy Policy</a>.</span></label>
+      <label class="check-row"><input type="checkbox" name="minor_permission_confirmed" value="yes" required><span>If I am under 18, I confirm that I have permission from my parent or legal guardian to create and use this account, including Botfolio's AI-assisted design review features.</span></label>
+      <p class="note">Botfolio accounts are not available to children under 13. Do not include your home address, private phone number, school schedule, password, API key, or other sensitive information in your account or profile.</p>
+    </fieldset>
+    <button class="btn btn--primary btn--lg" type="submit" id="create-account" disabled>Create account</button>
+  </form>
+{% endblock %}
+
+{% block auth_footer %}
+  <p class="sub">Already have one? <a href="{{ url_for('login') }}">Sign in</a>.</p>
+{% endblock %}
+
+{% block scripts %}<script>
+const registrationForm = document.querySelector('.auth__form form');
+const createAccount = document.getElementById('create-account');
+const confirmations = [...registrationForm.querySelectorAll('.legal-consent input[type="checkbox"]')];
+const updateCreateAccount = () => { createAccount.disabled = !confirmations.every((box) => box.checked); };
+confirmations.forEach((box) => box.addEventListener('change', updateCreateAccount));
+updateCreateAccount();
+</script>{% endblock %}

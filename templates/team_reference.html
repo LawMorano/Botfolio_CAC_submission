@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}{{ program_label }} Team {{ team['number'] }} &mdash; Botfolio{% endblock %}
+{% block meta_description %}Designs credited to {{ team['name'] }}. This team has not claimed a Botfolio profile.{% endblock %}
+
+{% block content %}
+<section class="team-unclaimed">
+  <p class="eyebrow">Creator credit</p>
+  <h1>{{ program_label }} Team {{ team['number'] }} &mdash; {{ team['name'] }}</h1>
+  <p class="note"><strong>This is not a team-managed profile.</strong> Botfolio credited the designs below to this team, but no team member has claimed or endorsed this page yet.</p>
+
+  {% if designs %}
+    <h2>Credited designs</h2>
+    <ul class="plain">
+      {% for design in designs %}<li><a href="{{ url_for('design_detail', design_id=design['id']) }}">{{ design['title'] }}</a></li>{% endfor %}
+    </ul>
+  {% endif %}
+
+  {% if current_user %}
+    <h2>Claim this team</h2>
+    <p class="sub">Claiming creates the team&rsquo;s Botfolio profile and confirms that the credited work belongs to this team.</p>
+    <form method="post" action="{{ url_for('create_team') }}" class="stack">
+      <input type="hidden" name="program" value="{{ team['program'] }}">
+      <input type="hidden" name="number" value="{{ team['number'] }}">
+      <label>Team name<input name="name" value="{{ team['name'] }}" required maxlength="80"></label>
+      <label>Region<input name="region" value="{{ team['region'] }}" maxlength="80"></label>
+      <label class="check-row"><input type="checkbox" name="accept_attributions" value="accepted" required><span>I am authorized to represent this team and confirm that the credited designs belong to it.</span></label>
+      <button class="btn btn--primary" type="submit">Claim team {{ team['number'] }}</button>
+    </form>
+  {% else %}
+    <p class="sub"><a href="{{ url_for('login', next=request.path) }}">Sign in</a> to claim this team and confirm its design credits.</p>
+  {% endif %}
+</section>
+{% endblock %}

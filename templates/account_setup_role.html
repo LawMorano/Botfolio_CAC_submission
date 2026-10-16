@@ -1,0 +1,21 @@
+{% extends "auth_base.html" %}
+{% block title %}Choose your role &mdash; Botfolio{% endblock %}
+
+{% block auth_eyebrow %}{% with current_step=3 %}{% include "_account_setup_progress.html" %}{% endwith %}{% endblock %}
+{% block auth_heading %}What&rsquo;s your robotics role?{% endblock %}
+{% block auth_sub %}<p class="sub">Choose the option that best describes you right now.</p>{% endblock %}
+
+{% block auth_form %}
+  <form method="post" class="stack account-setup-form role-picker">
+    <fieldset class="setup-choice-group">
+      <legend class="sr-only">Your robotics role</legend>
+      {% for value, label in roles.items() %}
+        <label class="role-option"><input type="radio" name="ftc_role" value="{{ value }}"{% if current_user['ftc_role'] == value %} checked{% endif %} required><span class="role-option__icon role-option__icon--{{ value }}" aria-hidden="true">{{ label[0] }}</span><span><strong>{{ label }}</strong><small>Displayed on your public Botfolio profile</small></span></label>
+      {% endfor %}
+    </fieldset>
+    <div class="setup-actions">
+      <a class="btn btn--quiet btn--lg" href="{{ url_for('account_setup_interests') }}">Back</a>
+      <button class="btn btn--primary btn--lg" type="submit">Continue</button>
+    </div>
+  </form>
+{% endblock %}

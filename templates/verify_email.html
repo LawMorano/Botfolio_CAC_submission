@@ -1,0 +1,11 @@
+{% extends "auth_base.html" %}
+{% block title %}Verify your email &mdash; Botfolio{% endblock %}
+
+{% block auth_heading %}Verify your email{% endblock %}
+{% block auth_sub %}<p class="sub">Please verify your email address before uploading designs, commenting, or participating in the community. Verification links expire after 24 hours.</p>{% endblock %}
+
+{% block auth_form %}
+  <form method="post" class="stack">
+    <button class="btn btn--primary btn--lg" type="submit">Send a new verification link</button>
+  </form>
+{% endblock %}

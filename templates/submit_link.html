@@ -1,0 +1,197 @@
+{% from "_team_credit.html" import team_credit %}
+{% extends "base.html" %}
+{% block title %}Quick-share a design &mdash; Botfolio{% endblock %}
+
+{% block content %}
+<div class="narrow">
+  <h1>Quick-share a design</h1>
+  <p class="sub">
+    Already host your model somewhere? Just link it, add the basics, and drop in
+    at least one image. Want to upload an <code>.stl</code>/<code>.obj</code>/<code>.step</code>
+    file of your own instead? <a href="{{ url_for('submit') }}">Use the full upload form.</a>
+  </p>
+
+  <form method="post" enctype="multipart/form-data" class="stack">
+    <label>
+      Title
+      <input name="title" required maxlength="120" value="{{ request.form.get('title', '') }}"
+             placeholder="e.g. 2-stage viper slide intake">
+    </label>
+
+    <label>
+      Model link
+      <input type="url" name="cad_link" required value="{{ request.form.get('cad_link', '') }}"
+             placeholder="Paste a public share link (Onshape, Fusion, GrabCAD, Drive…)">
+      <small>Required. A public link people can open to view or download your model.</small>
+    </label>
+
+    <label>
+      CAD software
+      <select name="cad_software" required>
+        {% for value, label in cad_software_choices.items() %}<option value="{{ value }}"{% if request.form.get('cad_software') == value %} selected{% endif %}>{{ label }}</option>{% endfor %}
+      </select>
+    </label>
+
+    <label>
+      Description <small>Optional</small>
+      <textarea name="description" rows="5" placeholder="What is it, and what makes it work?">{{ request.form.get('description', '') }}</textarea>
+    </label>
+
+    <label>Robotics program
+      <select name="program" id="program-select" required>
+        {% for code, label in programs.items() %}<option value="{{ code }}"{% if selected_program == code %} selected{% endif %}>{{ label }}</option>{% endfor %}
+      </select>
+    </label>
+
+    <label>
+      Season <small>Optional</small>
+      <select name="season_id" id="season-select">
+        <option value="">Not season-specific</option>
+        {% for s in seasons %}
+          <option value="{{ s['id'] }}" data-program="{{ s['program'] }}"{% if request.form.get('season_id') == s['id']|string %} selected{% endif %}>{{ s['name'] }} ({{ s['year_label'] }})</option>
+        {% endfor %}
+      </select>
+    </label>
+
+    <label>
+      Model Type <small>Optional</small>
+      <select name="archetype_id" id="archetype-select">
+        <option value="" data-season="">Not sure / none</option>
+        {% for a in archetypes %}
+          <option value="{{ a['id'] }}" data-season="{{ a['season_id'] or '' }}"{% if request.form.get('archetype_id') == a['id']|string %} selected{% endif %}>{{ a['name'] }}</option>
+        {% endfor %}
+      </select>
+      <small>A robot's role and how it scores. Picking a season narrows this list.</small>
+    </label>
+
+    <label>
+      Competition tested?
+      <select name="competition_tested" required>
+        <option value="">Choose one</option>
+        <option value="1"{% if request.form.get('competition_tested') == '1' %} selected{% endif %}>Yes, used in competition</option>
+        <option value="0"{% if request.form.get('competition_tested') == '0' %} selected{% endif %}>No, not yet</option>
+      </select>
+      <small>Required. You can update this after an event.</small>
+    </label>
+
+    <label>
+      Tags <small>Optional</small>
+      <input name="tags" id="tag-search" list="tag-suggestions" maxlength="255"
+             value="{{ request.form.get('tags', '') }}"
+             placeholder="Search tags; separate multiple tags with commas">
+      <datalist id="tag-suggestions"></datalist>
+      <small>Comma-separated. Others can add more later, and vote on whether yours actually fit.</small>
+    </label>
+
+    {% if current_user['is_admin'] %}
+      {{ team_credit('Upload for', 'This gives creator credit. It does not create a team-managed profile or award a Founding 50 spot; a team representative must claim and confirm it.',
+                     number=request.form.get('admin_team_number', ''),
+                     selected=request.form.get('admin_attribution', 'individual')) }}
+    {% else %}
+      <label>
+        Upload for
+        <select name="team_id" required id="team-select">
+          <option value="">Choose team or individual</option>
+          <option value="individual"{% if request.form.get('team_id') == 'individual' %} selected{% endif %}>Individual</option>
+          {% for t in teams %}<option value="{{ t['id'] }}" data-program="{{ t['program'] }}"{% if request.form.get('team_id') == t['id']|string %} selected{% endif %}>{{ programs[t['program']] }} Team {{ t['number'] }} &mdash; {{ t['name'] }}</option>{% endfor %}
+        </select>
+        <small>Required. Choose yourself or a team you belong to.</small>
+      </label>
+    {% endif %}
+
+    <label class="file-drop">
+      <input type="file" name="image_files" id="image-file" multiple required
+             accept=".png,.jpg,.jpeg,.webp">
+      <span>Add pictures</span>
+      <small>Required. At least one photo or render of your design. Up to 8; PNG, JPG, or WebP, 8 MB each.</small>
+    </label>
+    <p class="sub image-paste-hint">
+      Or press <kbd>Ctrl</kbd>+<kbd>V</kbd> to paste a screenshot straight from the
+      Snipping Tool or clipboard.
+      <span id="image-paste-status" class="image-paste-status" role="status" aria-live="polite"></span>
+    </p>
+    <div class="selected-images" id="selected-images" hidden aria-live="polite">
+      <div class="section-head"><strong id="selected-images-count"></strong><button class="text-button" id="clear-images" type="button">Clear all</button></div>
+      <ul class="selected-images__list" id="selected-images-list"></ul>
+    </div>
+
+    <fieldset class="panel legal-consent"><legend>Upload Certification</legend>
+      <label class="check-row"><input type="checkbox" name="upload_certification" value="accepted" required><span>I confirm that I created this content or have permission from its owner and my team to share it publicly; it does not contain confidential, stolen, unlawful, private, or intentionally unsafe material; I have permission to include any identifiable person shown; and I understand that it may be publicly viewed and downloaded.</span></label>
+      <p class="sub">By submitting this design, you grant Botfolio permission to host, display, resize, format, and make the content available through the platform as described in the <a href="{{ url_for('terms') }}">Terms of Use</a>.</p>
+    </fieldset>
+
+    <div class="row">
+      <button class="btn btn--primary btn--lg" type="submit">Publish</button>
+      <a class="btn btn--quiet" href="{{ url_for('gallery') }}">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='team-credit.js') }}" defer></script>
+<script type="module">
+import { initImagePaste } from "{{ url_for('static', filename='image-paste.js') }}";
+
+// Accumulate picked and pasted pictures, keeping the file input in sync.
+initImagePaste({
+  input: document.getElementById('image-file'),
+  summary: document.getElementById('selected-images'),
+  count: document.getElementById('selected-images-count'),
+  list: document.getElementById('selected-images-list'),
+  clearButton: document.getElementById('clear-images'),
+  status: document.getElementById('image-paste-status'),
+});
+
+// Narrow the model type list to the chosen season. Without JS every model type
+// stays listed, which is still usable.
+const seasonSelect = document.getElementById('season-select');
+const archetypeSelect = document.getElementById('archetype-select');
+const programSelect = document.getElementById('program-select');
+function filterSeasons() {
+  let selectedStillValid = !seasonSelect.value;
+  for (const option of seasonSelect.options) {
+    const show = !option.value || option.dataset.program === programSelect.value;
+    option.hidden = !show;
+    if (show && option.selected) selectedStillValid = true;
+  }
+  if (!selectedStillValid) seasonSelect.value = '';
+  filterArchetypes();
+}
+function filterArchetypes() {
+  const season = seasonSelect.value;
+  let activeStillValid = false;
+  for (const option of archetypeSelect.options) {
+    const owner = option.dataset.season;
+    // Keep the placeholder, cross-season model types, and matches.
+    const show = !owner || !season || owner === season;
+    option.hidden = !show;
+    if (show && option.selected) activeStillValid = true;
+  }
+  if (!activeStillValid) archetypeSelect.value = '';
+}
+seasonSelect.addEventListener('change', filterArchetypes);
+programSelect.addEventListener('change', filterSeasons);
+const teamSelect = document.getElementById('team-select');
+if (teamSelect) teamSelect.addEventListener('change', () => {
+  const teamProgram = teamSelect.selectedOptions[0]?.dataset.program;
+  if (teamProgram) { programSelect.value = teamProgram; filterSeasons(); }
+});
+filterSeasons();
+
+// Refresh tag autocomplete suggestions without leaving or reloading the form.
+const tagSearch = document.getElementById('tag-search');
+const tagSuggestions = document.getElementById('tag-suggestions');
+let tagTimer;
+tagSearch.addEventListener('input', () => {
+  clearTimeout(tagTimer);
+  tagTimer = setTimeout(async () => {
+    const query = tagSearch.value.split(',').pop().trim();
+    const data = await fetch(`{{ url_for('search_tags') }}?q=${encodeURIComponent(query)}`).then(r => r.json());
+    tagSuggestions.innerHTML = '';
+    data.tags.forEach(tag => { const option = document.createElement('option'); option.value = tag.name; tagSuggestions.appendChild(option); });
+  }, 120);
+});
+
+</script>
+{% endblock %}

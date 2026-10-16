@@ -1,0 +1,32 @@
+{% extends "auth_base.html" %}
+{% block title %}Set up your profile &mdash; Botfolio{% endblock %}
+
+{% block auth_eyebrow %}{% with current_step=1 %}{% include "_account_setup_progress.html" %}{% endwith %}{% endblock %}
+{% block auth_heading %}Set up your profile{% endblock %}
+{% block auth_sub %}<p class="sub">Start with the basics. You&rsquo;ll choose interests and your role next.</p>{% endblock %}
+
+{% block auth_form %}
+  <div class="onboarding-notice">
+    <p><strong>This profile is for you, not your team.</strong></p>
+    <p class="sub">You can create or join a robotics team after account setup.</p>
+  </div>
+
+  <form method="post" enctype="multipart/form-data" class="stack account-setup-form" data-team-detect data-team-detect-username="{{ current_user['username'] }}">
+    <label>Display name <small>Shown on your profile &mdash; your name, not a team name. First name and last initial is great.</small>
+      <input name="display_name" value="{{ current_user['display_name'] or '' }}" maxlength="80" placeholder="e.g. Lawrence M." data-team-detect-name></label>
+
+    <p class="sub">Signed in as <strong>@{{ current_user['username'] }}</strong></p>
+
+    <label>Profile photo <small>Optional. A photo or avatar of you &mdash; not a team logo.</small>
+      <input name="profile_image" type="file" accept=".png,.jpg,.jpeg,.webp"></label>
+
+    <label>About me <small>What you work on, your role on a team, what you&rsquo;re learning.</small>
+      <textarea name="bio" maxlength="3000" rows="4" placeholder="I focus on mechanical design and CAD&hellip;">{{ current_user['bio'] or '' }}</textarea></label>
+
+    <div class="setup-actions setup-actions--end">
+      <button class="btn btn--primary btn--lg" type="submit">Continue to interests</button>
+    </div>
+  </form>
+{% endblock %}
+
+{% block scripts %}<script src="{{ url_for('static', filename='team-detect.js') }}" defer></script>{% endblock %}

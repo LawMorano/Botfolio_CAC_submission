@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+{% block title %}{{ program_label }} Team {{ team['number'] }} &mdash; Botfolio{% endblock %}
+
+{% block content %}
+<header class="profile-hero team-hero">
+  {% if team['banner_image'] %}<div class="team-hero__banner"><img class="team-banner" src="{{ asset_url('uploads', team['banner_image']) }}" alt="{{ team['name'] }} banner"></div>{% endif %}
+  <div class="team-hero__content">
+    <div class="profile-hero__identity">
+      {% if team['profile_image'] %}<img class="profile-avatar profile-avatar--large team-logo" src="{{ asset_url('uploads', team['profile_image']) }}" alt="{{ team['name'] }} logo">{% else %}<div class="profile-avatar profile-avatar--large profile-avatar--fallback" aria-hidden="true">{{ team['name'][0]|upper }}</div>{% endif %}
+      <div>
+        <p class="eyebrow">{{ program_label }} robotics team</p>
+        <h1>{{ program_label }} Team {{ team['number'] }} &mdash; {{ team['name'] }}{% if team['is_founding'] %} <span class="founding-team-badge">Founding Team #{{ '%02d'|format(team['founding_rank']) }}</span>{% endif %}</h1>
+        {% if team['program'] == 'ftc' %}<p class="sub"><a href="{{ url_for('founding_50') }}">{{ founding_claimed }} of {{ founding_limit }} FTC Founding Team spots claimed</a></p>{% endif %}
+        <p class="sub">{% if team['region'] %}{{ team['region'] }} &middot; {% endif %}{{ members|length }} member{{ '' if members|length == 1 else 's' }}</p>
+      </div>
+    </div>
+    <div class="profile-hero__actions">{% if can_edit %}<a class="btn btn--primary" href="{{ url_for('edit_team', program=team['program'], number=team['number']) }}">Edit team profile</a>{% endif %}{% if current_user and not is_member %}{% if not pending_membership %}<form method="post" action="{{ url_for('request_team_membership', program=team['program'], number=team['number']) }}" class="inline"><button class="btn btn--primary" type="submit">Request to join team</button></form>{% elif pending_membership['kind'] == 'invitation' %}<a class="btn btn--primary" href="{{ url_for('notifications') }}">Review team invitation</a>{% endif %}{% elif not current_user %}<a class="btn btn--primary" href="{{ url_for('login') }}">Sign in to join</a>{% endif %}<button class="btn btn--quiet" type="button" data-invite-url="{{ invite_url }}">Invite a Team</button><a class="btn btn--quiet" href="{{ url_for('report_content', type='team', id=team['id'], url=request.url) }}">Report</a></div>
+  </div>
+  <div class="team-hero__details">
+    <dl class="team-stats" aria-label="Team design statistics">
+      <div><dt>Designs</dt><dd>{{ team_stats['design_count'] }}</dd></div>
+      <div><dt>Downloads</dt><dd>{{ team_stats['download_count'] }}</dd></div>
+      <div><dt>Likes</dt><dd>{{ team_stats['like_count'] }}</dd></div>
+      <div><dt>Visits</dt><dd>{{ team_stats['visit_count'] }}</dd></div>
+    </dl>
+  </div>
+  <div class="team-hero__admin">
+  {% if is_owner and members|length > 1 %}
+    <form method="post" action="{{ url_for('transfer_team', program=team['program'], number=team['number']) }}" class="row row--form" onsubmit="return confirm('Transfer ownership of this team?')">
+      <select name="new_owner_id" required><option value="">Choose new owner</option>{% for member in members %}{% if member['id'] != current_user['id'] %}<option value="{{ member['id'] }}">{{ member['username'] }}</option>{% endif %}{% endfor %}</select>
+      <button class="btn btn--quiet" type="submit">Transfer ownership</button>
+    </form>
+  {% endif %}
+  {% if is_owner or (current_user and current_user['is_admin']) %}
+    <form method="post" action="{{ url_for('delete_team', program=team['program'], number=team['number']) }}" class="inline" onsubmit="return confirm('Delete this team page? Designs will remain published but become unaffiliated.')">
+      <button class="btn btn--danger" type="submit">Delete team page</button>
+    </form>
+  {% endif %}
+  </div>
+</header>
+
+{% if pending_attribution_count and can_edit %}
+<section class="panel">
+  <h2>Confirm design credits</h2>
+  <p>{{ pending_attribution_count }} admin-uploaded design{{ '' if pending_attribution_count == 1 else 's' }} {{ 'is' if pending_attribution_count == 1 else 'are' }} credited to this team but not yet confirmed by a team manager.</p>
+  <form method="post" action="{{ url_for('accept_team_attributions', program=team['program'], number=team['number']) }}">
+    <button class="btn btn--primary" type="submit">Accept team design credits</button>
+  </form>
+</section>
+{% endif %}
+
+<section class="team-designs">
+  <div class="section-head"><h2>Designs by season</h2><span class="sub">{{ designs|length }} published</span></div>
+  {% if design_seasons %}
+    <nav class="season-jump" aria-label="Design seasons">{% for season in design_seasons %}<a class="chip" href="#season-{{ loop.index }}">{{ season['name'] }} ({{ season['designs']|length }})</a>{% endfor %}</nav>
+    {% for season in design_seasons %}<section class="season-group" id="season-{{ loop.index }}"><div class="section-head"><div><p class="eyebrow">{{ season['year_label'] or 'Season not specified' }}</p><h2>{{ season['name'] }}</h2></div><span class="sub">{{ season['designs']|length }} design{{ '' if season['designs']|length == 1 else 's' }}</span></div><div class="grid">{% for d in season['designs'] %}{% include "_design_card.html" %}{% endfor %}</div></section>{% endfor %}
+  {% else %}<p class="empty">This team hasn't published anything yet. Team members can attribute a design to this team when submitting it.</p>{% endif %}
+</section>
+
+{% if team['biography'] or team['website_url'] or social_links %}
+<section class="panel team-about">
+  <h2>About the team</h2>
+  {% if team['biography'] %}<p class="team-biography">{{ team['biography'] }}</p>{% else %}<p class="sub">This team has not added a biography yet.</p>{% endif %}
+  {% if team['website_url'] or social_links %}<div class="team-links">{% if team['website_url'] %}<a href="{{ team['website_url'] }}" rel="noopener noreferrer" target="_blank">Website</a>{% endif %}{% for label, link in social_links.items() %}<a href="{{ link }}" rel="noopener noreferrer" target="_blank">{{ label|title }}</a>{% endfor %}</div>{% endif %}
+</section>
+{% endif %}
+
+<div class="two-col">
+  <section class="panel">
+    <h2>Members</h2>
+    <ul class="plain">
+      {% for m in members %}
+        {% set member_specialty = m['specialties'].split(',')[0].strip() if m['specialties'] else (m['ftc_role']|title if m['ftc_role'] else '') %}
+        <li class="team-member-row">
+          <span><a href="{{ url_for('profile', username=m['username']) }}">{{ m['display_name'] or m['username'] }}</a>{% if member_specialty %} <span class="team-member-specialty">&mdash; {{ member_specialty }}</span>{% endif %}
+          {% if m['role'] == 'owner' %}<span class="chip chip--accent">owner</span>{% endif %}</span>
+          {% if current_user and (is_owner or current_user['is_admin']) and m['id'] != team['owner_id'] %}
+            <form method="post" action="{{ url_for('remove_team_member', program=team['program'], number=team['number'], user_id=m['id']) }}" onsubmit="return confirm('Remove {{ m['username'] }} from this team?')">
+              <button class="text-button" type="submit">Remove</button>
+            </form>
+          {% endif %}
+        </li>
+      {% endfor %}
+    </ul>
+
+    {% if is_owner %}
+      <h3>Invite a teammate</h3>
+      <form method="post" action="{{ url_for('invite_team_member', program=team['program'], number=team['number']) }}" class="row row--form">
+        <label class="sr-only" for="invite-username">Botfolio username</label>
+        <input id="invite-username" name="username" maxlength="50" placeholder="Botfolio username" required autocomplete="off">
+        <button class="btn btn--primary" type="submit">Send invitation</button>
+      </form>
+      {% if pending_invitations %}<p class="sub">Pending: {% for invitation in pending_invitations %}<strong>{{ invitation['username'] }}</strong>{% if not loop.last %}, {% endif %}{% endfor %}</p>{% endif %}
+      <p class="note">The teammate will receive an email and an in-app notification where they can accept or deny the invitation.</p>
+    {% elif current_user and not is_member %}
+      {% if pending_membership %}
+        <p class="note">{% if pending_membership['kind'] == 'invitation' %}You have a pending invitation. <a href="{{ url_for('notifications') }}">Review it in notifications.</a>{% else %}Your request to join is waiting for the team owner.{% endif %}</p>
+      {% else %}
+        <p class="sub">Use <strong>Request to join team</strong> at the top of this page. Have an invite code instead?</p>
+        <details class="legacy-team-code"><summary>Enter an invite code</summary>
+          <form method="post" action="{{ url_for('join_team', program=team['program'], number=team['number']) }}" class="row row--form">
+            <input name="invite_code" placeholder="Invite code" required>
+            <button class="btn btn--quiet" type="submit">Join with code</button>
+          </form>
+        </details>
+      {% endif %}
+    {% elif is_member %}
+      <p class="sub">You're a member of this team.</p>
+    {% else %}
+      <p class="sub"><a href="{{ url_for('login') }}">Sign in</a> to join with an invite code.</p>
+    {% endif %}
+  </section>
+
+</div>
+
+{% endblock %}

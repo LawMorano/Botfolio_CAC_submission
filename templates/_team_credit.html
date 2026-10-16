@@ -1,0 +1,40 @@
+{# The admin "upload for a team" control.
+
+   An admin credits a design to any team, whether or not that team is on
+   Botfolio, so there is no dropdown to pick from -- the team is identified by
+   its number and the name is looked up. Two ways in: type the number, or press
+   the button and search the selected program registry by name and click the team. Either way
+   the form posts a number, and app.credit_team_name resolves the label again on
+   the server so the credit is right even with this script disabled. #}
+{% macro team_credit(legend, note, number='', team_name='', selected='individual') %}
+<fieldset class="admin-team-attribution" data-team-credit>
+  <legend>{{ legend }} <span class="role-badge role-badge--admin">Admin</span></legend>
+  <label>Attribution
+    <select name="admin_attribution" id="admin-attribution" required>
+      <option value="individual"{% if selected != 'team' %} selected{% endif %}>Individual</option>
+      <option value="team"{% if selected == 'team' %} selected{% endif %}>Team</option>
+    </select>
+  </label>
+  <div class="team-credit" id="admin-team-fields"{% if selected != 'team' %} hidden{% endif %}>
+    <div class="team-credit__modes">
+      <label class="team-credit__field" data-credit-field="number">Team number
+        <input name="admin_team_number" id="admin-team-number" type="number" inputmode="numeric"
+               min="1" max="999999" placeholder="12345" autocomplete="off"
+               value="{{ number }}" data-credit-number>
+      </label>
+      <label class="team-credit__field" data-credit-field="name" hidden>Team name
+        <input type="search" placeholder="Example Robotics" autocomplete="off"
+               maxlength="80" data-credit-search>
+      </label>
+      <button type="button" class="btn btn--quiet btn--sm team-credit__toggle"
+              data-credit-toggle>Search by name</button>
+    </div>
+    <p class="team-credit__status" data-credit-status role="status" aria-live="polite"></p>
+    <ul class="team-credit__results" data-credit-results hidden></ul>
+    {# Only ever set to a name confirmed for the number currently in the box; it
+       is cleared the instant that number changes, so it cannot mislabel a team. #}
+    <input type="hidden" name="admin_team_name" data-credit-name value="{{ team_name }}">
+  </div>
+  <small>{{ note }}</small>
+</fieldset>
+{% endmacro %}

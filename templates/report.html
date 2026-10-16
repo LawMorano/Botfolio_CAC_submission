@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Report Content &mdash; Botfolio{% endblock %}
+{% block content %}
+<div class="narrow report-page">
+  <h1>Report Content</h1>
+  <p>Help us keep Botfolio safe, respectful, and useful. Use this form to report content or conduct that may violate our <a href="{{ url_for('community_rules') }}">Community and Content Rules</a>.</p>
+  <p class="sub">You do not need a Botfolio account to submit a report.</p>
+
+  <section class="panel legal-alert">
+    <h2>Urgent: intimate or nonconsensual imagery</h2>
+    <p>Botfolio prohibits intimate images or videos shared without the depicted person's consent, including digitally altered or AI-generated imagery.</p>
+    <p>Select that reason below or email <a href="mailto:{{ security_email }}">{{ security_email }}</a>. Include enough information for us to locate the content and understand the concern.</p>
+  </section>
+
+  <h2>Report details</h2>
+  <form method="post" class="stack panel">
+    <input type="hidden" name="content_type" value="{{ content_type }}">
+    <input type="hidden" name="content_id" value="{{ content_id }}">
+    <label>1. Content being reported<input name="content_url" value="{{ request.form.get('content_url', content_url) }}" maxlength="1000" required placeholder="Paste the URL or enter the Content ID"></label>
+    <label>2. Reason<select name="reason" required><option value="">Choose a reason</option>{% for group,options in reason_groups %}<optgroup label="{{ group }}">{% for value,label in options %}<option value="{{ value }}"{% if request.form.get('reason') == value %} selected{% endif %}>{{ label }}</option>{% endfor %}</optgroup>{% endfor %}</select></label>
+    <label>3. Description<textarea name="description" rows="7" minlength="10" maxlength="5000" required placeholder="Briefly explain what happened and why the content should be reviewed.">{{ request.form.get('description','') }}</textarea></label>
+    <label>4. Your email<input name="email" type="email" maxlength="254" required value="{{ request.form.get('email', current_user['email'] if current_user else '') }}" placeholder="Your email address"></label>
+    <p class="sub">We may use your email to ask for more information or provide an update. Botfolio will not ordinarily disclose your identity to the reported user. Please do not include unnecessary sensitive personal information.</p>
+    <button class="btn btn--primary btn--lg" type="submit">Submit Report</button>
+  </form>
+
+</div>
+{% endblock %}

@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Find an account &mdash; Botfolio{% endblock %}
+{% block page_class %}page--wide{% endblock %}
+{% block content %}
+<p class="eyebrow">Administrator tools</p>
+<h1>Find an account</h1>
+<p class="sub">Search by username, display name, or email address. Capitals do not matter, a Gmail address still finds its account when it is written with dots or a <code>+tag</code>, and suspended, banned and deleted accounts are all included &mdash; the public People search hides every one of those.</p>
+
+<form method="get" class="filters" role="search">
+  <label class="sr-only" for="account-q">Search accounts</label>
+  <input class="filters__q" id="account-q" name="q" value="{{ q }}" placeholder="Name or email address" maxlength="100" autofocus>
+  <button class="btn btn--primary" type="submit">Search</button>
+</form>
+
+{% if q and accounts %}
+  <p class="sub">{{ accounts|length }} account{{ '' if accounts|length == 1 else 's' }}{% if accounts|length == limit %}, showing the first {{ limit }}{% endif %}.</p>
+  <table class="table">
+    <thead>
+      <tr><th>Account</th><th>Email as stored</th><th>State</th><th>Joined</th><th>Why it matched</th></tr>
+    </thead>
+    <tbody>
+      {% for account in accounts %}{% set found = account['user'] %}
+      <tr>
+        <td>
+          <a href="{{ url_for('profile', username=found['username']) }}">{{ found['username'] }}</a>
+          {% if found['display_name'] %}<br><span class="sub">{{ found['display_name'] }}</span>{% endif %}
+        </td>
+        <td>{{ found['email'] }}</td>
+        <td>{{ account['state'] }}</td>
+        <td>{{ (found['created_at'] or '')[:10] }}</td>
+        <td><span class="sub">{{ account['why']|join('; ') }}</span></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <p class="sub">Open an account to warn, suspend, restore or ban it. An address shown here with capitals or stray spaces is stored exactly that way; lower-casing it is safe and makes the account easier to find next time.</p>
+{% elif q %}
+  <p class="empty">Nothing matched &ldquo;{{ q }}&rdquo;. Try a shorter fragment &mdash; a few letters of the name, or just the part of the address before the @.</p>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,157 @@
+name: CI
+
+# Runs on every push and every pull request. The point is narrow and worth
+# stating: two people work on this repository, and a change that breaks a page
+# should be caught before it reaches main rather than by whoever pulls next.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# A second push to the same branch cancels the first run still in progress.
+# Without this, pushing three times in a minute queues three full runs and the
+# useful one finishes last.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+
+  # -----------------------------------------------------------------------
+  # The database the app actually uses today.
+  # -----------------------------------------------------------------------
+  sqlite:
+    name: SQLite
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install
+        run: pip install -r requirements.txt
+
+      - name: Byte-compile everything
+        # Catches syntax errors in files no test happens to import. Cheap, and
+        # it fails in seconds rather than at start-up in production.
+        run: python -m compileall -q app.py db.py seed.py config.py infra tools
+
+      - name: Build the database
+        run: python seed.py
+
+      - name: Smoke test every route
+        run: python tools/smoke.py
+
+  # -----------------------------------------------------------------------
+  # The database production will use. This job is the real verification of
+  # infra/database.py: the seven f-string statements that cannot be checked
+  # statically are exercised here against a live server.
+  # -----------------------------------------------------------------------
+  postgres:
+    name: Postgres
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: botfolio
+          POSTGRES_PASSWORD: botfolio
+          POSTGRES_DB: botfolio
+        ports: ["5432:5432"]
+        # Without a health check the job races the container and fails on
+        # connection refused roughly half the time.
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql://botfolio:botfolio@localhost:5432/botfolio
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install
+        run: |
+          pip install -r requirements-deploy.txt
+          pip install pglast
+
+      - name: Check every statement parses as Postgres
+        # Runs first because it needs no database and pinpoints a bad statement
+        # by line number, where a failure in the live run only says "500".
+        run: python tools/check_translation.py
+
+      - name: Build the schema on Postgres
+        run: python seed.py
+
+      - name: Smoke test every route against Postgres
+        run: python tools/smoke.py
+
+  # -----------------------------------------------------------------------
+  # Known-vulnerability scan of our dependencies. pip-audit checks every
+  # pinned package against the Python advisory database, so a CVE disclosed in
+  # something we already ship shows up here rather than in a report from a
+  # stranger after launch. Runs on both requirement sets because production
+  # installs requirements-deploy.txt, not requirements.txt.
+  # -----------------------------------------------------------------------
+  audit:
+    name: Dependency audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install pip-audit
+        run: pip install pip-audit
+
+      - name: Audit runtime dependencies
+        run: pip-audit -r requirements.txt --strict
+
+      - name: Audit deploy dependencies
+        run: pip-audit -r requirements-deploy.txt --strict
+
+  # -----------------------------------------------------------------------
+  # The container both platforms deploy.
+  # -----------------------------------------------------------------------
+  docker:
+    name: Container builds
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build the image
+        run: docker build -t botfolio:ci .
+
+      - name: Boot it and check the health endpoint
+        # Proves gunicorn actually starts and the app answers. A Dockerfile
+        # that builds but exits on start-up is the classic way a deploy fails
+        # after CI has gone green.
+        run: |
+          docker run -d --name botfolio-ci -p 8080:8080 -e PORT=8080 botfolio:ci
+          for attempt in $(seq 1 20); do
+            if curl -fsS http://localhost:8080/healthz; then
+              echo "healthy after ${attempt}s"
+              docker rm -f botfolio-ci
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "never became healthy; container log follows:"
+          docker logs botfolio-ci
+          docker rm -f botfolio-ci
+          exit 1

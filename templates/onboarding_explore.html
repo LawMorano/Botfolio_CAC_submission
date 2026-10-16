@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Start exploring &mdash; Botfolio{% endblock %}
+
+{% block content %}
+<section class="onboarding">
+  <ol class="onboarding__steps" aria-label="Onboarding progress">
+    <li class="is-done">Profile</li>
+    <li class="is-done">Team</li>
+    <li class="is-current">Explore</li>
+  </ol>
+
+  <p class="eyebrow">Step 3 of 3 &middot; Start exploring</p>
+  <h1>You&rsquo;re all set</h1>
+  <p class="sub">Here are a few good places to start.</p>
+
+  <div class="onboarding-choices">
+    <a class="onboarding-choice" href="{{ url_for('gallery') }}">
+      <h2>Browse designs</h2>
+      <p>Explore CAD and complete robots shared by real teams.</p>
+    </a>
+    <a class="onboarding-choice" href="{{ url_for('gallery') }}">
+      <h2>Save designs</h2>
+      <p>Bookmark designs to revisit them from your profile.</p>
+    </a>
+    <a class="onboarding-choice" href="{{ url_for('submit') }}">
+      <h2>Upload a design</h2>
+      <p>Share your own work with the community.</p>
+    </a>
+  </div>
+
+  {# Someone who signed up because a download asked them to gets that download
+     back here, rather than being handed the home page and left to find it. #}
+  {% if post_signup_next %}
+    <p class="onboarding__finish"><a class="btn btn--primary btn--lg" href="{{ post_signup_next }}">Back to what you were downloading</a></p>
+    <p class="sub"><a href="{{ url_for('index') }}">Or go to Botfolio home</a></p>
+  {% else %}
+    <p class="onboarding__finish"><a class="btn btn--quiet" href="{{ url_for('index') }}">Go to Botfolio home</a></p>
+  {% endif %}
+</section>
+{% endblock %}

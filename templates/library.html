@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}My Library &mdash; Botfolio{% endblock %}
+{% block meta_description %}Every design you've saved or downloaded on Botfolio, gathered in one private place.{% endblock %}
+{% block page_class %}page--wide{% endblock %}
+{% block content %}
+<h1>My Library</h1>
+<p class="sub">Private to you &middot; every design you've saved or downloaded, gathered in one place.</p>
+
+<nav class="profile-tabs" aria-label="Library sections">
+  <a href="#saved">Saved <span>{{ saved_designs|length }}</span></a>
+  <a href="#downloads">Downloads <span>{{ downloaded_designs|length }}</span></a>
+</nav>
+
+<section id="saved" class="profile-section">
+  <div class="section-head"><h2>Saved Designs</h2><span class="sub">{{ saved_designs|length }} saved</span></div>
+  {% if saved_designs %}<div class="grid">{% for d in saved_designs %}{% include "_design_card.html" %}{% endfor %}</div>{% else %}<p class="empty">Save useful designs to find them here later.</p>{% endif %}
+</section>
+
+<section id="downloads" class="profile-section">
+  <div class="section-head"><h2>Download Library</h2><span class="sub">{{ downloaded_designs|length }} design{{ '' if downloaded_designs|length == 1 else 's' }}</span></div>
+  {% if downloaded_designs %}<div class="grid">{% for d in downloaded_designs %}{% include "_design_card.html" %}{% endfor %}</div>{% else %}<p class="empty">Designs you download are collected here so you can find them again.</p>{% endif %}
+</section>
+{% endblock %}

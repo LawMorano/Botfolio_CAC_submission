@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Notifications &mdash; Botfolio{% endblock %}
+{% block content %}
+<div class="section-head"><div><p class="eyebrow">Community activity</p><h1>Notifications</h1></div>{% if has_unread_activity %}<form method="post" action="{{ url_for('read_notifications') }}"><button class="btn btn--quiet" type="submit">Mark design activity as read</button></form>{% endif %}</div>
+{% if membership_notifications %}
+  <section>
+    <h2>Team invitations and requests</h2>
+    <ul class="notification-list">
+      {% for item in membership_notifications %}<li class="is-unread team-membership-notification">
+        <div>
+          {% if item['kind'] == 'invitation' %}<p><strong>{{ item['initiator_name'] }}</strong> invited you to join <a href="{{ url_for('team_detail', program=item['team_program'], number=item['team_number']) }}"><strong>{{ item['team_program']|upper }} Team {{ item['team_number'] }} &mdash; {{ item['team_name'] }}</strong></a>.</p>
+          {% else %}<p><strong>{{ item['member_name'] }}</strong> requested to join <a href="{{ url_for('team_detail', program=item['team_program'], number=item['team_number']) }}"><strong>{{ item['team_program']|upper }} Team {{ item['team_number'] }} &mdash; {{ item['team_name'] }}</strong></a>.</p>{% endif %}
+          <span>{{ item['created_at'] }}</span>
+        </div>
+        <div class="row">
+          <form method="post" action="{{ url_for('respond_to_team_membership', request_id=item['id']) }}"><button class="btn btn--primary" name="action" value="accept" type="submit">Accept</button></form>
+          <form method="post" action="{{ url_for('respond_to_team_membership', request_id=item['id']) }}"><button class="btn btn--quiet" name="action" value="deny" type="submit">Deny</button></form>
+        </div>
+      </li>{% endfor %}
+    </ul>
+  </section>
+{% endif %}
+{% if notifications %}<section><h2>Design activity</h2><ul class="notification-list">{% for item in notifications %}<li class="{% if not item['read_at'] %}is-unread{% endif %}"><a href="{{ url_for('design_detail', design_id=item['design_id']) }}#comment-{{ item['comment_id'] }}"><strong>{{ item['actor_name'] or 'A community member' }}</strong> {% if item['kind'] == 'reply' %}replied to your comment{% else %}commented on your design{% endif %} <strong>{{ item['design_title'] }}</strong>.</a><span>{{ item['created_at'] }}</span></li>{% endfor %}</ul></section>{% elif not membership_notifications %}<p class="empty">No notifications yet. Team activity, comments, and replies will appear here.</p>{% endif %}
+{% endblock %}

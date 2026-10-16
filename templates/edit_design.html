@@ -1,0 +1,434 @@
+{% from "_team_credit.html" import team_credit %}
+{% extends "base.html" %}
+{% block title %}Edit {{ design['title'] }} &mdash; Botfolio{% endblock %}
+
+{% block content %}
+<div class="edit-design-page">
+  <div class="submit-head">
+    <div class="submit-head__intro">
+      <h1>{% if is_quick and not full_mode %}Edit quick design{% else %}Edit design{% endif %}</h1>
+      <p class="sub">Update the files and details people see on this design.</p>
+    </div>
+  </div>
+
+  {% if is_quick and not full_mode %}
+    <div class="edit-convert">
+      <p class="sub">This design is a quick share &mdash; just a link to your model. Want to add build details, specs, and an in-browser 3D model?</p>
+      <a class="btn" href="{{ url_for('edit_design', design_id=design['id'], full=1) }}">Convert to a full upload</a>
+    </div>
+  {% endif %}
+
+  <form method="post" enctype="multipart/form-data" class="stack submit-form edit-design-form">
+    <input type="hidden" name="full_mode" value="{{ '1' if full_mode else '0' }}">
+    {% if full_mode %}
+    <section class="panel edit-design-files">
+      <h2>1. Preview images</h2>
+      {% if design_images %}
+        <div class="edit-design-current-images">
+          {% for image in design_images %}<img src="{{ asset_url('uploads', image['filename']) }}" alt="Current preview {{ loop.index }}">{% endfor %}
+        </div>
+      {% endif %}
+      <label class="file-drop">
+        <input type="file" name="image_files" id="image-file" multiple accept=".png,.jpg,.jpeg,.webp">
+        <span>Choose replacement pictures</span>
+        <small>Optional. Choosing files replaces the current set; the first becomes the gallery cover. Up to 8 images.</small>
+      </label>
+
+      <h3>3D model</h3>
+      <p class="sub">{% if design['model_filename'] %}Choose a file to replace the current model.{% else %}Attach a model if this design has one.{% endif %} Leave this empty to keep the current file.</p>
+      <label class="file-drop">
+        <input type="file" name="model_file" id="model-file" accept=".stl,.obj,.glb,.step,.stp">
+        <span>{% if design['model_filename'] %}Choose a replacement model{% else %}Choose a 3D model{% endif %}</span>
+        <small>STL, OBJ, GLB, STEP, or STP.</small>
+      </label>
+      <input type="hidden" name="model_upload_token" id="model-upload-token">
+      <p class="sub" id="model-upload-status" hidden aria-live="polite"></p>
+
+      {% if model_viewable %}
+      <div class="recapture-preview" id="recapture-fieldset">
+        <h3>Preview angle</h3>
+        <p class="sub">You can also re-orient the current model and capture a new gallery cover.</p>
+        <button class="btn" type="button" id="load-viewer">Change the preview angle</button>
+        <div class="viewer" id="viewer" hidden></div>
+        <p class="viewer-status" id="viewer-status" role="status"></p>
+        <div class="viewer-actions" id="viewer-actions" hidden>
+          <button class="btn" type="button" data-view="reset">Reset view</button>
+          <button class="btn" type="button" data-view="front">Front</button>
+          <button class="btn" type="button" data-view="back">Back</button>
+          <button class="btn" type="button" data-view="left">Left</button>
+          <button class="btn" type="button" data-view="right">Right</button>
+          <button class="btn" type="button" data-view="top">Top</button>
+          <button class="btn" type="button" data-view="bottom">Bottom</button>
+          <button class="btn btn--quiet" type="button" id="viewer-orient-start">Reset viewer sequence</button>
+          <button class="btn btn--primary" type="button" id="capture">Set this angle as the preview</button>
+        </div>
+        <div class="capture-preview" id="capture-preview" hidden>
+          <img id="capture-image" alt="New captured preview">
+          <p class="sub">This replaces the gallery cover when you save.</p>
+        </div>
+        <input type="hidden" name="preview_data_url" id="preview-data-url">
+        <input type="hidden" name="camera_json" id="camera-json">
+      </div>
+      {% endif %}
+    </section>
+    {% endif %}
+
+    <section class="panel edit-design-details">
+      <h2>{% if full_mode %}2. Describe it{% else %}Design details{% endif %}</h2>
+    <label>
+      Title
+      <input name="title" required maxlength="120" value="{{ design['title'] }}">
+    </label>
+
+    <label>
+      Description
+      <textarea name="description" rows="6">{{ design['description'] }}</textarea>
+    </label>
+
+    <label>
+      Robotics program
+      <select name="program" id="program-select" required>
+        {% for code, label in programs.items() %}
+          <option value="{{ code }}"{% if selected_program == code %} selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+      {% if current_team and admin_can_edit_team %}<small>If you change programs, confirm the matching team credit below.</small>{% elif current_team %}<small>Changing to a different program removes the current {{ current_team['program']|upper }} Team {{ current_team['number'] }} credit.</small>{% endif %}
+    </label>
+
+    {% if full_mode %}
+    <div class="two-col design-stage-fields">
+      <label>Prototype version
+        <input name="prototype_version" type="number" min="1" max="99" value="{{ design['prototype_version'] or 1 }}" required>
+        <small>Enter 1 for V1, 2 for V2, and so on.</small>
+      </label>
+      <label>Competition tested?
+        <select name="competition_tested" required>
+          <option value="1"{% if design['competition_tested'] %} selected{% endif %}>Yes, used in competition</option>
+          <option value="0"{% if not design['competition_tested'] %} selected{% endif %}>No, not yet</option>
+        </select>
+      </label>
+    </div>
+
+    <fieldset class="design-spec-fields">
+      <legend>Physical specifications</legend>
+      <p class="sub">Optional. Skip them if nothing is measured yet &mdash; but if you fill one in, fill in all three.</p>
+      {% set dimension_unit = design['dimension_unit'] or 'in' %}
+      <label>Measurement unit
+        <select name="dimension_unit" id="dimension-unit">
+          <option value="in"{% if dimension_unit == 'in' %} selected{% endif %}>Inches (in)</option>
+          <option value="mm"{% if dimension_unit == 'mm' %} selected{% endif %}>Millimeters (mm)</option>
+        </select>
+      </label>
+      <div class="design-dimensions">
+        <label>Length (<span class="dimension-unit-label">{{ dimension_unit }}</span>)<input name="length_in" type="number" min="0.01" max="{{ 25400 if dimension_unit == 'mm' else 1000 }}" step="0.01" value="{{ ((design['length_in'] * 25.4)|round(2)) if design['length_in'] is not none and dimension_unit == 'mm' else (design['length_in'] if design['length_in'] is not none else '') }}" placeholder="{{ 457.2 if dimension_unit == 'mm' else 18 }}"></label>
+        <label>Width (<span class="dimension-unit-label">{{ dimension_unit }}</span>)<input name="width_in" type="number" min="0.01" max="{{ 25400 if dimension_unit == 'mm' else 1000 }}" step="0.01" value="{{ ((design['width_in'] * 25.4)|round(2)) if design['width_in'] is not none and dimension_unit == 'mm' else (design['width_in'] if design['width_in'] is not none else '') }}" placeholder="{{ 457.2 if dimension_unit == 'mm' else 18 }}"></label>
+        <label>Height (<span class="dimension-unit-label">{{ dimension_unit }}</span>)<input name="height_in" type="number" min="0.01" max="{{ 25400 if dimension_unit == 'mm' else 1000 }}" step="0.01" value="{{ ((design['height_in'] * 25.4)|round(2)) if design['height_in'] is not none and dimension_unit == 'mm' else (design['height_in'] if design['height_in'] is not none else '') }}" placeholder="{{ 355.6 if dimension_unit == 'mm' else 14 }}"></label>
+      </div>
+      <div class="two-col">
+        <label>Number of motors <small>Optional</small><input name="motor_count" type="number" min="0" max="99" value="{{ design['motor_count'] if design['motor_count'] is not none else '' }}"></label>
+        <label>Number of servos <small>Optional</small><input name="servo_count" type="number" min="0" max="99" value="{{ design['servo_count'] if design['servo_count'] is not none else '' }}"></label>
+      </div>
+    </fieldset>
+    {% else %}
+    <label>Competition tested?
+      <select name="competition_tested" required>
+        <option value="1"{% if design['competition_tested'] %} selected{% endif %}>Yes, used in competition</option>
+        <option value="0"{% if not design['competition_tested'] %} selected{% endif %}>No, not yet</option>
+      </select>
+    </label>
+    {% endif %}
+
+    <div class="two-col cad-sharing-fields">
+      <label>CAD software
+        <select name="cad_software" data-cad-software required>
+          {% for value, label in cad_software_choices.items() %}<option value="{{ value }}"{% if design['cad_software'] == value %} selected{% endif %}>{{ label }}</option>{% endfor %}
+        </select>
+      </label>
+      <label data-cad-link-field>Design link <small>Optional</small>
+        <input type="url" name="cad_link" value="{{ design['cad_link'] or design['onshape_link'] or '' }}" placeholder="Paste a public share link">
+      </label>
+    </div>
+
+    <label>
+      Season
+      <select name="season_id" id="season-select">
+        <option value="">Not season-specific</option>
+        {% for s in seasons %}
+          <option value="{{ s['id'] }}" data-program="{{ s['program'] }}"
+                  {% if selected_season == s['id'] %}selected{% endif %}>
+            {{ s['name'] }} ({{ s['year_label'] }})
+          </option>
+        {% endfor %}
+      </select>
+    </label>
+
+    <label>
+      Model Type
+      <select name="archetype_id" id="archetype-select">
+        <option value="">Not sure / none</option>
+        {% for a in archetypes %}
+          <option value="{{ a['id'] }}" data-season="{{ a['season_id'] or '' }}" data-program="{{ a['season_program'] or '' }}"
+                  {% if selected_archetype == a['id'] %}selected{% endif %}>
+            {{ a['name'] }}
+          </option>
+        {% endfor %}
+      </select>
+    </label>
+
+    {% if admin_can_edit_team %}
+      {{ team_credit('Creator', 'This gives creator credit. The team must claim its profile and confirm the attribution before it can affect the Founding 50.',
+                     number=current_team['number'] if current_team else '',
+                     selected='team' if current_team else 'individual') }}
+    {% endif %}
+
+    {% if full_mode %}
+    <fieldset class="contributors-picker"><legend>Contributors</legend><p class="sub">Credit registered users. Saving replaces the current credits.</p>
+      {% for row in range(3) %}{% set contributor = contributors[row] if row < contributors|length else none %}<div class="two-col"><label>Username <input name="contributor_username" maxlength="24" value="{{ contributor['username'] if contributor else '' }}" placeholder="Registered username"></label><label>Role <select name="contributor_role"><option value="">No role selected</option>{% for role in contributor_roles %}<option value="{{ role }}"{% if contributor and contributor['role'] == role %} selected{% endif %}>{{ role }}</option>{% endfor %}</select></label></div>{% endfor %}
+    </fieldset>
+
+    {% endif %}
+
+    <div class="row">
+      <button class="btn btn--primary btn--lg" type="submit">Save changes</button>
+      <a class="btn btn--quiet" href="{{ url_for('design_detail', design_id=design['id']) }}">Cancel</a>
+    </div>
+    </section>
+  </form>
+</div>
+<script src="{{ url_for('static', filename='team-credit.js') }}" defer></script>
+<script src="{{ url_for('static', filename='measurement-units.js') }}" defer></script>
+<script>
+const programSelect = document.getElementById('program-select');
+const seasonSelect = document.getElementById('season-select');
+const archetypeSelect = document.getElementById('archetype-select');
+
+function filterEditTaxonomy() {
+  let seasonStillValid = !seasonSelect.value;
+  for (const option of seasonSelect.options) {
+    const show = !option.value || option.dataset.program === programSelect.value;
+    option.hidden = !show;
+    if (show && option.selected) seasonStillValid = true;
+  }
+  if (!seasonStillValid) seasonSelect.value = '';
+
+  let archetypeStillValid = !archetypeSelect.value;
+  for (const option of archetypeSelect.options) {
+    const globalChoice = !option.value || !option.dataset.season;
+    const show = globalChoice || (
+      option.dataset.program === programSelect.value &&
+      (!seasonSelect.value || option.dataset.season === seasonSelect.value)
+    );
+    option.hidden = !show;
+    if (show && option.selected) archetypeStillValid = true;
+  }
+  if (!archetypeStillValid) archetypeSelect.value = '';
+}
+
+programSelect.addEventListener('change', filterEditTaxonomy);
+seasonSelect.addEventListener('change', filterEditTaxonomy);
+filterEditTaxonomy();
+
+const cadSoftware = document.querySelector('[data-cad-software]');
+const cadLinkField = document.querySelector('[data-cad-link-field]');
+// Download only means there is no document to link to.
+function syncCadLinkField() {
+  cadLinkField.hidden = !cadSoftware.value || cadSoftware.value === 'download-only';
+}
+cadSoftware.addEventListener('change', syncCadLinkField);
+syncCadLinkField();
+
+// Attaching an STL/OBJ. In production the file is far too large to POST through
+// the app (the edge proxy resets oversized bodies), so it goes straight to
+// object storage in resumable parts and the form carries only a token. Local
+// development, where direct uploads are off, posts the file with the form.
+const modelForm = document.querySelector('form.stack');
+const modelFileInput = document.getElementById('model-file');
+const modelTokenInput = document.getElementById('model-upload-token');
+const modelStatus = document.getElementById('model-upload-status');
+const directModelUploads = {{ direct_model_uploads|tojson }};
+
+if (modelForm && modelFileInput && directModelUploads) {
+  const csrf = () => modelForm.querySelector('[name="csrf_token"]')?.value;
+  const saveBtn = modelForm.querySelector('button[type="submit"]');
+  let uploading = false;
+
+  const setStatus = (message) => {
+    modelStatus.hidden = false;
+    modelStatus.textContent = message;
+  };
+
+  const putPart = (url, body, onProgress, attempt = 1) => new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('PUT', url);
+    xhr.timeout = 3 * 60 * 1000;
+    xhr.upload.onprogress = (event) => { if (event.lengthComputable) onProgress(event.loaded); };
+    const retryable = (makeError) => {
+      if (attempt < 3) setTimeout(() => putPart(url, body, onProgress, attempt + 1).then(resolve, reject), 500 * attempt);
+      else reject(makeError());
+    };
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        const etag = xhr.getResponseHeader('ETag');
+        if (etag) resolve(etag);
+        else reject(new Error('Storage did not return a part identifier.'));
+      } else retryable(() => new Error(`Storage rejected a model part (${xhr.status}).`));
+    };
+    xhr.onerror = () => retryable(() => new Error('A model part was interrupted.'));
+    xhr.ontimeout = () => retryable(() => new Error('A model part timed out.'));
+    xhr.send(body);
+  });
+
+  const uploadModel = async (file) => {
+    const headers = {'Content-Type': 'application/json', 'X-CSRF-Token': csrf()};
+    setStatus('Preparing secure model upload…');
+    const auth = await fetch({{ url_for('authorize_model_upload')|tojson }}, {
+      method: 'POST', headers, body: JSON.stringify({filename: file.name, size: file.size}),
+    });
+    const data = await auth.json();
+    if (!auth.ok) throw new Error(data.error || 'Upload authorization failed.');
+
+    const completed = [];
+    let done = 0;
+    for (const part of data.parts) {
+      const start = (part.part_number - 1) * data.part_size;
+      const body = file.slice(start, Math.min(start + data.part_size, file.size));
+      const etag = await putPart(part.upload_url, body, (loaded) => {
+        setStatus(`Uploading model… ${Math.round((done + loaded) / file.size * 100)}%`);
+      });
+      done += body.size;
+      completed.push({part_number: part.part_number, etag});
+    }
+
+    setStatus('Verifying and saving the model…');
+    const complete = await fetch({{ url_for('complete_model_upload')|tojson }}, {
+      method: 'POST', headers, body: JSON.stringify({upload_token: data.upload_token, parts: completed}),
+    });
+    const completion = await complete.json();
+    if (!complete.ok) throw new Error(completion.error || 'Storage could not complete the upload.');
+    return data.upload_token;
+  };
+
+  modelForm.addEventListener('submit', async (event) => {
+    const file = modelFileInput.files[0];
+    // Nothing to upload, or the token is already in hand — let the form go.
+    if (!file || modelTokenInput.value || uploading) return;
+    event.preventDefault();
+    uploading = true;
+    if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = 'Uploading model…'; }
+    try {
+      modelTokenInput.value = await uploadModel(file);
+      modelFileInput.value = '';                 // keep the large file out of the POST
+      modelForm.submit();
+    } catch (err) {
+      uploading = false;
+      if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'Save changes'; }
+      setStatus((err && err.message ? err.message : 'The model upload failed.') + ' You can try again.');
+    }
+  });
+}
+</script>
+{% if model_viewable %}
+<script type="module">
+import { ModelViewer, webglAvailable } from "{{ url_for('static', filename='viewer.js') }}";
+import { mountOrientationWizard } from "{{ url_for('static', filename='viewer-orientation.js') }}";
+
+const loadBtn    = document.getElementById('load-viewer');
+const holder     = document.getElementById('viewer');
+const status     = document.getElementById('viewer-status');
+const actions    = document.getElementById('viewer-actions');
+const captureBtn = document.getElementById('capture');
+const dataURLIn  = document.getElementById('preview-data-url');
+const cameraIn   = document.getElementById('camera-json');
+const previewBox = document.getElementById('capture-preview');
+const previewImg = document.getElementById('capture-image');
+
+const modelURL = {{ url_for('view_design_model', design_id=design['id'])|tojson }};
+// `tojson` escapes for safe embedding; the server rebuilt this from scratch
+// (see clean_viewer_state in routes/designs.py) before it was stored.
+const cameraState = JSON.parse({{ (design['camera_json'] or 'null')|tojson }});
+
+const orientStart = document.getElementById('viewer-orient-start');
+const orientURL = {{ url_for('designs.set_design_orientation', design_id=design['id'])|tojson }};
+const csrfToken = {{ csrf_token()|tojson }};
+const ownerName = {{ (design['username'] if design['user_id'] != current_user['id'] else None)|tojson }};
+
+if (!webglAvailable()) {
+  loadBtn.disabled = true;
+  status.textContent = 'Your browser does not support the 3D viewer, so the preview angle cannot be changed here.';
+} else {
+  let viewer = null;
+  let loaded = false;
+
+  // The model is fetched only when the owner asks to change the angle, so an
+  // ordinary text edit never pulls the mesh down.
+  loadBtn.addEventListener('click', async () => {
+    if (viewer) return;
+    loadBtn.disabled = true;
+    holder.hidden = false;
+    status.textContent = 'Loading model…';
+    viewer = new ModelViewer(holder);
+    try {
+      await viewer.loadURL(modelURL);
+      if (cameraState) viewer.setCameraState(cameraState);
+      mountOrientationWizard({
+        viewer,
+        button: orientStart,
+        host: holder,
+        ownerName,
+        coverHint: 'The gallery cover is still the picture captured before this. '
+          + 'If it shows the model at an angle you would not choose now, set a new '
+          + 'one with the button below and save.',
+        // Written straight away rather than left for the form's Save, because
+        // the sequence tells the user it is done and because the rest of this
+        // page saves nothing until then; an orientation that quietly waited on
+        // an unrelated Save would be lost to anyone who navigated away.
+        async save(state) {
+          const response = await fetch(orientURL, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken},
+            body: JSON.stringify(state),
+          });
+          if (!response.ok) {
+            const body = await response.json().catch(() => ({}));
+            throw new Error(body.error || 'That could not be saved. Try again.');
+          }
+          // A preview captured earlier in this session carries the angle as it
+          // was before the model turned. The picture itself is still right —
+          // re-orienting moves the camera with the model and leaves the render
+          // identical — but the angle stored beside it has to be the new one,
+          // or saving the form would put the old reading back.
+          if (dataURLIn.value) cameraIn.value = JSON.stringify(state);
+        },
+      });
+      loaded = true;
+      actions.hidden = false;
+      loadBtn.hidden = true;
+      status.textContent = 'Drag to rotate, scroll to zoom. Capture it when it looks right.';
+    } catch (err) {
+      viewer = null;
+      loadBtn.disabled = false;
+      holder.hidden = true;
+      status.textContent = 'Could not load the model. ' + err.message;
+    }
+  });
+
+  captureBtn.addEventListener('click', () => {
+    if (!loaded) return;
+    dataURLIn.value = viewer.capture();
+    cameraIn.value = JSON.stringify(viewer.getCameraState());
+    previewImg.src = dataURLIn.value;
+    previewBox.hidden = false;
+    status.textContent = 'New preview set. It replaces the gallery cover when you save.';
+  });
+
+  document.querySelectorAll('#recapture-fieldset [data-view]').forEach((control) => {
+    control.addEventListener('click', () => {
+      if (!viewer) return;
+      if (control.dataset.view === 'reset') viewer.resetView();
+      else viewer.setView(control.dataset.view);
+    });
+  });
+}
+</script>
+{% endif %}
+{% endblock %}

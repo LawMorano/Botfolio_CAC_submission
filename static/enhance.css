@@ -1,0 +1,252 @@
+/* enhance.css — the adaptive visual layer.
+ *
+ * Botfolio serves the same markup to everyone, but two visual tiers:
+ *   [data-perf="high"]  full effects — animated hero aurora, gradient text,
+ *                       glass depth, pointer-tracking card glow, button shine.
+ *   [data-perf="low"]   a fast, flat version — blur and animated backgrounds
+ *                       stripped — so low-end and mobile devices stay smooth.
+ *
+ * The tier is chosen before first paint in base.html (device capability, with a
+ * user override remembered in localStorage). Everything expensive lives behind
+ * the high-tier selector; the low-tier block below actively removes cost the
+ * base theme would otherwise pay.
+ */
+
+/* ================================================================= LITE ===
+ * Strip the expensive parts of the base theme for low-end / mobile devices. */
+
+:root[data-perf="low"] body {
+  /* Drop the two radial washes — a flat fill paints far cheaper. */
+  background: var(--bg);
+}
+:root[data-perf="low"] .topbar {
+  /* Backdrop blur is one of the most expensive things a phone GPU can do. */
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  background: #11161d;
+}
+:root[data-perf="low"] .card,
+:root[data-perf="low"] .how__steps li {
+  transition: border-color .18s ease, box-shadow .18s ease;
+}
+/* Keep colour/border feedback, but skip the transform + image zoom + deep
+ * shadow that force a repaint on every hover. */
+:root[data-perf="low"] .card-slot:hover .card,
+:root[data-perf="low"] .how__steps li:hover {
+  transform: none;
+  box-shadow: var(--shadow-1);
+}
+:root[data-perf="low"] .card-slot:hover .card__image img { transform: none; }
+
+/* ================================================================= FULL ===
+ * Everything below only applies to the high tier. */
+
+/* ---- Hero aurora: a slow drifting gradient mesh behind the hero copy ---- */
+.hero { position: relative; }
+.hero__aurora { display: none; }
+
+:root[data-perf="high"] .hero { isolation: isolate; }
+:root[data-perf="high"] .hero__aurora {
+  display: block;
+  position: absolute;
+  inset: -30% -20% -40%;
+  z-index: -1;
+  pointer-events: none;
+  filter: blur(38px) saturate(130%);
+  opacity: .75;
+  background:
+    radial-gradient(38% 44% at 18% 26%, rgba(255, 122, 61, .55), transparent 60%),
+    radial-gradient(34% 40% at 78% 20%, rgba(88, 150, 214, .45), transparent 62%),
+    radial-gradient(40% 46% at 62% 78%, rgba(78, 201, 138, .32), transparent 64%);
+}
+:root[data-perf="high"] .hero__copy { position: relative; z-index: 1; }
+
+/* ---- Living gradient mesh (hero.js, full tier + motion + anime.js) ----
+ * Hidden until hero.js confirms it can drive the blobs, at which point it takes
+ * the aurora's place. Each blob wanders independently; the whole layer drifts
+ * against the pointer. If hero.js never runs, the aurora above stays. */
+.hero__mesh { display: none; }
+:root[data-perf="high"] .hero.hero-mesh-on .hero__aurora { display: none; }
+:root[data-perf="high"] .hero.hero-mesh-on .hero__mesh {
+  display: block;
+  position: absolute;
+  inset: -32% -20% -42%;
+  z-index: -1;
+  pointer-events: none;
+  filter: blur(42px) saturate(135%);
+  opacity: .8;
+  will-change: transform;
+}
+:root[data-perf="high"] .hero__mesh i {
+  position: absolute;
+  display: block;
+  border-radius: 50%;
+  will-change: transform;
+}
+:root[data-perf="high"] .hero__mesh i:nth-child(1) { top: 6%;  left: 8%;  width: 46%; height: 54%; background: radial-gradient(circle, rgba(255, 122, 61, .60), transparent 62%); }
+:root[data-perf="high"] .hero__mesh i:nth-child(2) { top: 0;   left: 56%; width: 46%; height: 52%; background: radial-gradient(circle, rgba(88, 150, 214, .52), transparent 62%); }
+:root[data-perf="high"] .hero__mesh i:nth-child(3) { top: 46%; left: 42%; width: 52%; height: 58%; background: radial-gradient(circle, rgba(78, 201, 138, .42), transparent 64%); }
+:root[data-perf="high"] .hero__mesh i:nth-child(4) { top: 38%; left: 0;   width: 42%; height: 50%; background: radial-gradient(circle, rgba(255, 176, 120, .38), transparent 64%); }
+
+@media (prefers-reduced-motion: no-preference) {
+  :root[data-perf="high"] .hero__aurora {
+    animation: botfolio-aurora 20s var(--ease) infinite alternate;
+  }
+}
+@keyframes botfolio-aurora {
+  0%   { transform: translate3d(-3%, -2%, 0) scale(1);    }
+  50%  { transform: translate3d(3%, 2%, 0)  scale(1.08);  }
+  100% { transform: translate3d(-2%, 3%, 0) scale(1.03);  }
+}
+
+/* ---- Auth panel: the branded gradient drifts slowly on the full tier ---- */
+@media (prefers-reduced-motion: no-preference) {
+  :root[data-perf="high"] .auth__panel-bg {
+    animation: botfolio-aurora 24s var(--ease) infinite alternate;
+  }
+}
+
+/* ---- Primary buttons: a light sweep passes across on hover ---- */
+:root[data-perf="high"] .btn--primary { position: relative; overflow: hidden; }
+:root[data-perf="high"] .btn--primary > * { position: relative; z-index: 1; }
+:root[data-perf="high"] .btn--primary::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(115deg, transparent 32%, rgba(255, 255, 255, .38) 50%, transparent 68%);
+  transform: translateX(-130%);
+  pointer-events: none;
+}
+@media (prefers-reduced-motion: no-preference) {
+  :root[data-perf="high"] .btn--primary::after { transition: transform .6s var(--ease-out); }
+  :root[data-perf="high"] .btn--primary:hover::after { transform: translateX(130%); }
+}
+
+/* ---- Cards: a soft accent glow that follows the pointer ----
+ * interactive.js feeds --mx/--my; without JS it rests at the centre. */
+:root[data-perf="high"] .card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: inherit;
+  background: radial-gradient(240px circle at var(--mx, 50%) var(--my, 50%),
+              rgba(255, 122, 61, .20), transparent 62%);
+  opacity: 0;
+  transition: opacity .4s var(--ease);
+  pointer-events: none;
+}
+:root[data-perf="high"] .card-slot:hover .card::before { opacity: 1; }
+/* Keep the real content above the glow layer. */
+:root[data-perf="high"] .card__image,
+:root[data-perf="high"] .card__body { position: relative; z-index: 1; }
+
+/* ---- Glass search panel gets a touch more depth on the full tier ---- */
+:root[data-perf="high"] .global-search__results {
+  backdrop-filter: blur(14px) saturate(140%);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
+}
+
+/* ---- Registry (not-yet-joined) teams read as a distinct search result ---- */
+.registry-tag {
+  display: inline-block;
+  margin-left: .5ch;
+  padding: .05em .5em;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-size: .72em;
+  font-weight: 500;
+  color: var(--text-dim);
+  vertical-align: middle;
+}
+
+/* ================================================ visual-detail toggle === */
+
+.perf-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  margin-top: .9rem;
+  font-size: .82rem;
+  color: var(--text-dim);
+}
+.perf-toggle__label { margin-right: .15rem; }
+.perf-toggle button {
+  padding: .22rem .6rem;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--text-dim);
+  font: inherit;
+  font-size: .82rem;
+  cursor: pointer;
+  transition: color .25s var(--ease), border-color .25s var(--ease), background .25s var(--ease);
+}
+.perf-toggle button:hover { color: var(--text); border-color: var(--text-dim); }
+.perf-toggle button[aria-pressed="true"] {
+  color: #1a0f08;
+  background: linear-gradient(180deg, #ff8d57, var(--accent));
+  border-color: var(--accent);
+  font-weight: 600;
+}
+
+/* ==================================================== craft polish (full) ===
+ * The layer that ties the full tier together — small, considered touches that
+ * read as "someone cared", never as noise. All high-tier only; the spinning
+ * bits are additionally gated to prefers-reduced-motion. Nothing here is load-
+ * bearing: strip every rule below and the site is still complete, just flatter.
+ * (Deliberately does NOT restate what the base theme already does — the nav
+ * underline, primary-button shine, card pointer-glow and image zoom all live in
+ * style.css / earlier in this file.) */
+
+/* ---- Cards: an accent ring resolves out of the border on hover ----
+ * A conic gradient is painted into the border box (via the padding-box/border-
+ * box mask) only while hovered, and slowly rotates. @property lets the angle
+ * animate; where it is unsupported the `from` angle falls back to 0deg and the
+ * ring is simply static — so this degrades to a tasteful fixed gradient edge. */
+@property --botfolio-ring {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+:root[data-perf="high"] .card {
+  transition: transform .55s var(--ease-out), border-color .45s var(--ease),
+              box-shadow .55s var(--ease-out);
+}
+:root[data-perf="high"] .card-slot:hover .card {
+  /* Hand the 1px edge to the gradient; the raised fill keeps the interior. */
+  border-color: transparent;
+  background:
+    linear-gradient(var(--raised), var(--raised)) padding-box,
+    conic-gradient(from var(--botfolio-ring),
+      var(--accent), #5896d6 34%, #4ec98a 62%, var(--accent)) border-box;
+}
+@media (prefers-reduced-motion: no-preference) {
+  :root[data-perf="high"] .card-slot:hover .card { animation: botfolio-ring-spin 5s linear infinite; }
+}
+@keyframes botfolio-ring-spin { to { --botfolio-ring: 360deg; } }
+
+/* ---- Section heads: a short accent bar anchors the divider on the left ---- */
+:root[data-perf="high"] .section-head { position: relative; }
+:root[data-perf="high"] .section-head::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -1px;                 /* sit on the existing 1px divider */
+  width: 60px;
+  height: 2px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, var(--accent), rgba(88, 150, 214, .55));
+}
+
+/* ---- Panels: a hairline top highlight gives raised surfaces glass depth ----
+ * Inset shadow, so it respects the radius and never clips content. */
+:root[data-perf="high"] .panel {
+  box-shadow: var(--shadow-2), inset 0 1px 0 rgba(255, 255, 255, .06);
+}
+
+/* ---- Primary buttons: an accent-tinted lift-shadow warms the hover ----
+ * Complements the existing light-sweep without touching its gradient fill. */
+:root[data-perf="high"] .btn--primary:hover {
+  box-shadow: 0 8px 24px -8px rgba(255, 122, 61, .55);
+}

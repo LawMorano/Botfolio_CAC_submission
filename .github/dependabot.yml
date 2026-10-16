@@ -1,0 +1,24 @@
+# Dependabot keeps our dependencies patched without anyone remembering to check.
+# Once a week it opens a pull request for any Python package or GitHub Action
+# that has a newer version — security fixes included — so upgrades arrive as a
+# reviewable change rather than a surprise. Grouped so we get a handful of PRs,
+# not one per package.
+version: 2
+updates:
+  - package-ecosystem: pip
+    directory: "/"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      python-dependencies:
+        patterns: ["*"]
+
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      github-actions:
+        patterns: ["*"]

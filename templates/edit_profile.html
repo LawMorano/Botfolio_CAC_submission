@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Edit {{ user['username'] }}{% endblock %}
+{% block content %}
+<h1>Edit profile</h1>
+<form method="post" enctype="multipart/form-data" class="stack panel narrow" data-team-detect data-team-detect-username="{{ user['username'] }}">
+  <p class="note">Do not include your home address, private phone number, personal email, school schedule, exact location, password, API key, or other sensitive information in your public profile.</p>
+  <label>Role
+    <select name="ftc_role">
+      <option value="">Not specified</option>
+      {% for value, label in roles.items() %}<option value="{{ value }}"{% if user['ftc_role'] == value %} selected{% endif %}>{{ label }}</option>{% endfor %}
+    </select>
+    <small>This role is self-identified and will appear beside your username.</small>
+  </label>
+  <label>Profile image<input name="profile_image" type="file" accept=".png,.jpg,.jpeg,.webp"></label>
+  <label>Name <small>Optional public display name.</small><input name="display_name" value="{{ user['display_name'] }}" maxlength="80" data-team-detect-name></label>
+  <label>Tagline <small>A short description shown under your username.</small><input name="tagline" value="{{ user['tagline'] }}" maxlength="120" placeholder="Mechanical lead focused on reliable intakes"></label>
+  <label>Biography<textarea name="bio" maxlength="3000" rows="7">{{ user['bio'] }}</textarea></label>
+  <label>General region <small>For privacy, use a state, province, or country rather than an exact address.</small><input name="location" value="{{ user['location'] }}" maxlength="120"></label>
+  <fieldset><legend>Interests / Skills</legend><div class="chips checkbox-chips">{% for interest in interest_choices %}<label class="chip"><input type="checkbox" name="interests" value="{{ interest }}"{% if interest in selected_interests %} checked{% endif %}> {{ interest }}</label>{% endfor %}</div></fieldset>
+  <input type="hidden" name="specialties" value="{{ user['specialties'] }}">
+  <label>CAD tools <small>Comma-separated, such as Onshape, Fusion 360, SolidWorks.</small><input name="cad_tools" value="{{ user['cad_tools'] }}" maxlength="300"></label>
+  <label>Website<input name="website_url" type="url" value="{{ user['website_url'] or '' }}" placeholder="https://example.com" autocomplete="url"></label>
+  {% for label in ['instagram','youtube','github'] %}<label>{{ label|title }}<input name="{{ label }}" type="url" value="{{ links.get(label, '') }}" placeholder="https://"></label>{% endfor %}
+  {% if owned_designs %}<fieldset class="featured-picker"><legend>Featured designs</legend><p class="sub">Choose up to six designs for the top of your portfolio.</p>{% for design in owned_designs %}<label class="check-row"><input type="checkbox" name="featured_designs" value="{{ design['id'] }}" {% if design['id'] in selected_designs %}checked{% endif %}> {{ design['title'] }}</label>{% endfor %}</fieldset>{% endif %}
+  <p class="sub">Team affiliation is controlled by joining or leaving a team.</p>
+  <button class="btn btn--primary" type="submit">Save profile</button>
+</form>
+{% endblock %}
+
+{% block scripts %}<script src="{{ url_for('static', filename='team-detect.js') }}" defer></script>{% endblock %}

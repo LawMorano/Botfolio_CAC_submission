@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}About &mdash; Botfolio{% endblock %}
+
+{% block content %}
+<article class="prose">
+  <h1>About Botfolio</h1>
+
+  <p>Botfolio was built around a simple idea: robotics teams should be able to
+    learn from each other without having to dig through old Discord threads,
+    match videos, social posts, or scattered CAD files.</p>
+  <p>There are a lot of great ideas in the robotics community. The problem is
+    finding them when you actually need them.</p>
+  <p>Botfolio gives teams a place to share designs, explain how they work, and
+    make them easier for others to discover.</p>
+  <p class="note">Botfolio is an independent educational platform and is not
+    affiliated with, endorsed by, sponsored by, or operated by FIRST&reg;,
+    FIRST Tech Challenge&reg;, VEX Robotics&reg;, or any other robotics
+    competition organization referenced on this site.</p>
+
+  <h2>Built for the Robotics Community</h2>
+  <p>Upload a CAD model or photo, choose the view that shows it best, and tell
+    people what the mechanism does.</p>
+  <p>Other teams can browse designs, search by tags, compare different
+    approaches, and use what they find as inspiration for their own work.</p>
+  <p>The goal is not to tell teams how to build a robot. It is to make it easier
+    to see how other people solved similar problems.</p>
+
+  <h2>Tags That Grow With the Community</h2>
+  <p>Robotics changes quickly, and teams constantly come up with new mechanisms,
+    names, and ideas.</p>
+  <p>Botfolio lets the community suggest and vote on tags so the way designs are
+    organized can grow naturally instead of being limited to a fixed list.</p>
+  <p>That makes it easier to find what people are actually building.</p>
+
+  <h2>AI-Assisted Feedback</h2>
+  <p>Botfolio also offers optional AI-assisted design feedback.</p>
+  <p>The AI can review available design information, rendered views, and
+    descriptions to point out strengths, potential concerns, and ideas worth considering.</p>
+  <p>It is meant to be another perspective, not an answer key. AI feedback can be
+    wrong and should never replace testing, engineering judgment, mentor guidance,
+    safety review, or official competition rules.</p>
+  {% if not ai_enabled %}
+    <p class="note">AI feedback is currently switched off on this instance
+      because no API key is configured. Everything else works normally.</p>
+  {% endif %}
+
+  <h2>Share What You've Learned</h2>
+  <p>Some of the best robotics ideas come from seeing how another team approached
+    the same problem differently.</p>
+  <p>Share the mechanism that worked. Show the idea that took a few versions to
+    get right. Help another team find a better starting point.</p>
+  <p>The more the community shares, the more useful Botfolio becomes for everyone.</p>
+  <p class="about-actions">
+    <a class="btn btn--primary" href="{{ url_for('gallery') }}">Browse designs</a>
+    <a class="btn" href="{{ url_for('submit') }}">Share a design</a>
+  </p>
+</article>
+{% endblock %}

@@ -1,0 +1,42 @@
+# Secrets — NEVER commit these. This repo is public.
+# Match the whole .env family (.env.production, .env.staging, .env.backup, …),
+# not just the two exact names — a real secret in any of them would otherwise
+# be committed silently. Keep the checked-in template.
+.env
+.env.*
+!.env.example
+.config
+# Credential files people drop next to the app (e.g. a Google OAuth
+# client_secret_*.json or an AWS service-account key) must never be tracked.
+*credential*.json
+client_secret*.json
+*service-account*.json
+# Local dev server logs are not source and have no business in history.
+.codex-local-server*.log
+# Database (regenerate with `python seed.py`)
+*.db
+*.sqlite3
+
+# User-uploaded content
+static/uploads/*
+!static/uploads/.gitkeep
+static/models/*
+!static/models/.gitkeep
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Agent skills installed locally via `npx skills add` (personal tooling, not product code)
+.agents/
+.claude/skills/
+skills-lock.json

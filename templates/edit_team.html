@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Edit Team {{ team['number'] }}{% endblock %}
+{% block content %}
+<h1>Edit Team {{ team['number'] }}</h1>
+<form method="post" enctype="multipart/form-data" class="stack panel">
+  <label>Team name<input name="name" value="{{ team['name'] }}" maxlength="100" required></label>
+  <label>Team number<input name="number" type="number" min="1" value="{{ team['number'] }}" required></label>
+  <label>Location<input name="region" value="{{ team['region'] }}" maxlength="120"></label>
+  <label>Biography<textarea name="biography" maxlength="3000" rows="7">{{ team['biography'] }}</textarea></label>
+  <label>Website<input name="website_url" type="url" value="{{ team['website_url'] or '' }}" placeholder="https://example.com" autocomplete="url"></label>
+  {% for label in ['instagram','youtube','github'] %}<label>{{ label|title }}<input name="{{ label }}" type="url" value="{{ links.get(label, '') }}" placeholder="https://"></label>{% endfor %}
+  <label>Profile logo<input name="profile_image" type="file" accept=".png,.jpg,.jpeg,.webp"></label>
+  <label>Banner image<input name="banner_image" type="file" accept=".png,.jpg,.jpeg,.webp"></label>
+  <button class="btn btn--primary" type="submit">Save profile</button>
+</form>
+{% endblock %}

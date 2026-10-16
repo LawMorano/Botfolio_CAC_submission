@@ -1,0 +1,31 @@
+{# Deliberately standalone. This is the page a signed-in user is sent to when
+   the page carrying their sign-out button will not render, so it inherits from
+   nothing and reads nothing but the CSRF token: whatever broke the rest of the
+   site must not be able to break the way out of it. base.html injects the CSRF
+   field into forms with JavaScript, so this one carries its own. #}
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sign out &mdash; Botfolio</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='20260831-dotw') }}">
+<style>
+  .signout{min-height:100vh;display:grid;place-items:center;padding:2rem}
+  .signout__card{max-width:26rem;text-align:center}
+</style>
+</head>
+<body>
+<main class="signout">
+  <div class="signout__card">
+    <h1>Sign out of Botfolio?</h1>
+    <p class="sub">This clears your session on this device.</p>
+    <form method="post">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button class="btn btn--primary btn--lg" type="submit">Sign out</button>
+    </form>
+    <p class="sub"><a href="{{ url_for('index') }}">Back to Botfolio</a></p>
+  </div>
+</main>
+</body>
+</html>

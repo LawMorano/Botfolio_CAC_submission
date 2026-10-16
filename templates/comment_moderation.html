@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block title %}Moderation &mdash; Botfolio{% endblock %}
+{% block content %}
+<p class="eyebrow">Administrator tools</p>
+<h1>Moderation</h1>
+<section id="accounts" class="panel moderation-user-search">
+  <div class="section-head"><div><h2>Find an account</h2><p class="sub">Search by username, display name, or email to open a profile and use its moderation controls.</p></div></div>
+  <form method="get" action="{{ url_for('comment_moderation') }}" class="filters" role="search">
+    <label class="sr-only" for="moderation-user-query">Username, display name, or email</label>
+    <input id="moderation-user-query" type="search" name="user" maxlength="254" value="{{ user_query }}" placeholder="Search username, display name, or email" autocomplete="off">
+    <button class="btn btn--primary" type="submit">Search accounts</button>
+  </form>
+  <h3>{{ 'Matching accounts' if user_query else 'All accounts' }}</h3>
+    {% if user_results %}<div class="moderation-user-results">
+      {% for account in user_results %}{% set user = account['user'] %}
+        <a href="{{ url_for('profile', username=user['username']) }}">
+          <span><strong>{{ user['username'] }}</strong>{% if user['display_name'] %} <span class="sub">{{ user['display_name'] }}</span>{% endif %}{% if user['is_admin'] %} <span class="role-badge role-badge--admin" aria-label="Administrator">A</span>{% endif %}<br><span class="sub">{{ user['email'] }}</span>{% if account['why'] %}<br><span class="sub">{{ account['why']|join('; ') }}</span>{% endif %}</span>
+          <span class="sub">{{ account['state']|capitalize }} &rarr;</span>
+        </a>
+      {% endfor %}
+    </div>{% else %}<p class="empty">{% if user_query %}No accounts matched “{{ user_query }}”.{% else %}No accounts found.{% endif %}</p>{% endif %}
+  {% if has_more_users %}
+    <p class="sub">Showing the first 20 accounts.</p>
+    <a class="btn btn--quiet" href="{{ url_for('comment_moderation', user=user_query, accounts='all') }}#accounts">See all</a>
+  {% elif show_all_users and user_results|length > 20 %}
+    <a class="btn btn--quiet" href="{{ url_for('comment_moderation', user=user_query) }}#accounts">Show fewer</a>
+  {% endif %}
+</section>
+<section>
+  <div class="section-head">
+    <div><h2>Hidden designs</h2><p class="sub">Designs hidden from the gallery and public profiles. Open a design to review it, or restore it here.</p></div>
+    {% if hidden_designs %}<span class="chip">{{ hidden_designs|length }}</span>{% endif %}
+  </div>
+  {% if hidden_designs %}<div class="moderation-list">
+    {% for design in hidden_designs %}
+      <article class="panel">
+        <div class="section-head">
+          <h3><a href="{{ url_for('design_detail', design_id=design['id']) }}">{{ design['title'] }}</a></h3>
+          <span class="sub">Hidden {{ design['updated_at'] }}</span>
+        </div>
+        <p class="sub">By <a href="{{ url_for('profile', username=design['owner_name']) }}">{{ design['owner_name'] }}</a> &middot; Design #{{ design['id'] }}</p>
+        {% if design['hide_reason'] %}<p class="note"><strong>Hide reason:</strong> {{ design['hide_reason'] }}</p>{% endif %}
+        <form method="post" action="{{ url_for('moderate_design', design_id=design['id']) }}" class="row row--form">
+          <input type="hidden" name="action" value="restore">
+          <input type="hidden" name="return_to" value="moderation">
+          <label class="sr-only" for="restore-reason-{{ design['id'] }}">Reason for restoring {{ design['title'] }}</label>
+          <input id="restore-reason-{{ design['id'] }}" name="reason" maxlength="500" placeholder="Reason for restoring this design" required>
+          <button class="btn btn--primary" type="submit">Restore design</button>
+        </form>
+      </article>
+    {% endfor %}
+  </div>{% else %}<p class="empty">There are no hidden designs.</p>{% endif %}
+</section>
+<section>
+  <h2>Content reports</h2>
+  {% if content_reports %}<div class="moderation-list">
+    {% for report in content_reports %}
+      <article class="panel{% if report['priority'] == 3 %} legal-alert{% endif %}">
+        <div class="section-head"><h3>{{ report_reasons.get(report['reason'], report['reason']|replace('_',' ')|title) }}{% if report['priority'] == 3 %} &mdash; P1 IMMEDIATE{% elif report['priority'] == 2 %} &mdash; P2 HIGH{% endif %}</h3><span class="chip">{{ report['workflow_status']|replace('_',' ')|title }}</span></div>
+        <p><strong>Content:</strong> {{ report['content_type'] }} {{ report['content_id'] or '' }} &middot; {% set reported_href = report['content_url']|safe_report_url %}{% if reported_href %}<a href="{{ reported_href }}" rel="noopener noreferrer nofollow" target="_blank">Open reported location</a>{% else %}<span class="sub">{{ report['content_url'] }}</span>{% endif %}</p>
+        <p>{{ report['description'] }}</p>
+        <p class="sub"><strong>Received:</strong> {{ report['created_at'] }}{% if report['action_taken_at'] %} &middot; <strong>Action taken:</strong> {{ report['action_taken_at'] }}{% endif %} &middot; Reporter: <a href="mailto:{{ report['reporter_email'] }}">{{ report['reporter_email'] }}</a>{% if report['assigned_admin_name'] %} &middot; Assigned to {{ report['assigned_admin_name'] }}{% endif %}</p>
+        {% if report['reason'] == 'intimate' %}<p class="note"><strong>Privacy:</strong> Do not download, screenshot, or copy the reported imagery into notes. Use the immediate-hide control and retain only the minimum text needed to document the response.</p>{% endif %}
+        {% if report['decision_reason'] %}<p class="note"><strong>Latest decision:</strong> {{ report['decision_reason'] }}</p>{% endif %}
+        {% if report['content_type'] in ['design','comment','profile','team'] and report['content_id'] %}<form method="post" action="{{ url_for('resolve_content_report', report_id=report['id']) }}" class="row row--form" onsubmit="return confirm('Immediately hide this reported content from public view?')">
+          <input type="hidden" name="action" value="hide_content">
+          <input name="note" maxlength="500" value="Reported content hidden pending review." aria-label="Immediate-hide action note">
+          <button class="btn btn--danger" type="submit">Hide content immediately</button>
+        </form>{% endif %}
+        <form method="post" action="{{ url_for('resolve_content_report', report_id=report['id']) }}" class="row row--form">
+          <input type="hidden" name="action" value="set_status">
+          <select name="workflow_status" required>
+            {% for value,label in [('new','New'),('under_review','Under Review'),('action_taken','Action Taken'),('closed','Closed')] %}<option value="{{ value }}"{% if report['workflow_status']==value %} selected{% endif %}>{{ label }}</option>{% endfor %}
+          </select>
+          <input name="note" maxlength="500" placeholder="Decision, action taken, or reason">
+          <button class="btn btn--primary" type="submit">Update report</button>
+        </form>
+      </article>
+    {% endfor %}
+  </div>{% else %}<p class="empty">There are no active content reports.</p>{% endif %}
+</section>
+<section>
+  <h2>Legacy comment reports</h2>
+  {% if reports %}<div class="moderation-list">{% for report in reports %}<article class="panel"><div class="section-head"><h3><a href="{{ url_for('design_detail', design_id=report['design_id']) }}#comment-{{ report['comment_id'] }}">{{ report['design_title'] }}</a></h3><span class="sub">{{ report['created_at'] }}</span></div><p>{{ report['body'] or 'Comment removed.' }}</p><p class="sub">Written by {{ report['author_name'] }} &middot; Reported by {{ report['reporter_name'] }}</p><p class="note">{{ report['reason'] }}</p><div class="row"><form method="post" action="{{ url_for('resolve_comment_report', report_id=report['id']) }}"><input type="hidden" name="action" value="hide"><button class="btn btn--danger" type="submit">Hide comment</button></form><form method="post" action="{{ url_for('resolve_comment_report', report_id=report['id']) }}"><input type="hidden" name="action" value="dismiss"><button class="btn btn--quiet" type="submit">Dismiss report</button></form></div></article>{% endfor %}</div>{% else %}<p class="empty">There are no open comment reports.</p>{% endif %}
+</section>
+{% endblock %}

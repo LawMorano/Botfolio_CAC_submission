@@ -1,0 +1,28 @@
+{# The .card-slot wrapper is the stationary hover target: the card lifts on
+   hover, but the slot (the grid cell) never moves, so hovering at the card's
+   edge can't oscillate on/off as the card slides out from under the cursor. #}
+<div class="card-slot">
+<a class="card design-card" href="{{ url_for('design_detail', design_id=d['id']) }}">
+  <div class="card__image">
+    <img src="{{ asset_url('uploads', d['image_filename']) }}"
+         alt="{{ d['title'] }}" loading="lazy">
+    {% set is_3d = model_is_viewable(d['model_filename'], d['model_size_bytes']) %}
+    {% if is_3d %}<span class="badge badge--3d">3D</span>{% elif d['model_filename'] or d['cad_link'] or d['onshape_link'] %}<span class="badge badge--download">Download</span>{% endif %}
+    {% if d['competition_tested'] %}<span class="card__tested" aria-label="Competition tested" title="Competition tested"><span aria-hidden="true">&#10003;</span><span class="tested-badge__label">Competition tested</span></span>{% endif %}
+  </div>
+  <div class="card__body">
+    <p class="eyebrow">{{ programs[d['program']] if programs is defined else d['program']|upper }}</p>
+    <h3>{{ d['title'] }}</h3>
+    <p class="card__meta">
+      {% if d['uploaded_by_admin'] %}<strong class="card__admin">Uploaded by admin</strong>{% elif d['team_number'] %}Team {{ d['team_number'] }}{% if d['team_name'] %} &middot; {{ d['team_name'] }}{% endif %}{% elif d['username'] %}{{ d['username'] }}{% endif %}
+      {% if d['season_name'] %}<span class="dot"></span>{{ d['season_name'] }}{% endif %}
+    </p>
+    {% if d['cad_software'] %}<span class="cad-badge cad-badge--{{ d['cad_software'] }}">{{ {'onshape':'Onshape','fusion-360':'Fusion 360','solidworks':'SolidWorks','inventor':'Inventor','freecad':'FreeCAD','creo':'Creo','download-only':'Download only','other':'Other CAD'}.get(d['cad_software'], d['cad_software']) }}</span>{% endif %}
+    <p class="card__stats">
+      <span title="Likes"><span aria-hidden="true">&#9829;</span> <span class="sr-only">Likes:</span>{{ d['like_count'] or 0 }}</span>
+      <span title="Downloads"><span aria-hidden="true">&#8595;</span> <span class="sr-only">Downloads:</span>{{ d['download_count'] or 0 }}</span>
+      <span title="Views"><span aria-hidden="true">&#9673;</span> <span class="sr-only">Views:</span>{{ d['visit_count'] or 0 }}</span>
+    </p>
+  </div>
+</a>
+</div>

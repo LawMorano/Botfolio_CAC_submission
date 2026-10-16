@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Search{% if q %}: {{ q }}{% endif %} &mdash; Botfolio{% endblock %}
+{% block page_class %}page--wide{% endblock %}
+{% block content %}
+<header class="search-page__header">
+  <p class="eyebrow">Site search</p>
+  <h1>{% if q %}Results for &ldquo;{{ q }}&rdquo;{% else %}Search Botfolio{% endif %}</h1>
+  {% if q %}<p class="sub">{{ total }} result{{ '' if total == 1 else 's' }} across designs, people, teams, tags, and pages.</p>{% else %}<p class="sub">Use the search bar above to find anything on Botfolio.</p>{% endif %}
+</header>
+
+{% if q and total %}
+  <div class="search-page__groups">
+    {% for group in search_groups if group['items'] %}
+      <section class="{% if group['key'] != 'designs' %}panel {% endif %}search-page__group">
+        <div class="section-head"><h2>{{ group['label'] }}</h2><span class="sub">{{ group['items']|length }}</span></div>
+        {% if group['key'] == 'designs' %}
+          <div class="grid">{% for item in group['items'] %}{% set d = item['design'] %}{% include "_design_card.html" %}{% endfor %}</div>
+        {% else %}
+          <div class="search-page__results">{% for item in group['items'] %}<a href="{{ item['url'] }}"><strong>{{ item['title'] }}{% if item['badge'] %} <span class="registry-tag">{{ item['badge'] }}</span>{% endif %}</strong><span>{{ item['subtitle'] }}</span></a>{% endfor %}</div>
+        {% endif %}
+      </section>
+    {% endfor %}
+  </div>
+{% elif q %}
+  <p class="empty">Nothing matched. Try a broader term or check the spelling.</p>
+{% endif %}
+{% endblock %}

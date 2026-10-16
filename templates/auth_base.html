@@ -1,0 +1,29 @@
+{# Shared, intentionally simple shell for sign-in and account setup pages. #}
+{% extends "base.html" %}
+
+{% block content %}
+<div class="auth {% block auth_class %}auth--simple{% endblock %}">
+  <div class="auth__form">
+    <div class="auth__form-inner">
+      {% block auth_eyebrow %}{% endblock %}
+      <h1>{% block auth_heading %}{% endblock %}</h1>
+      {% block auth_sub %}{% endblock %}
+      {% block auth_form %}{% endblock %}
+      {% block auth_footer %}{% endblock %}
+    </div>
+  </div>
+  <aside class="auth__panel">
+    <div>
+      <h2>{% block auth_panel_heading %}Where robotics teams show their work.{% endblock %}</h2>
+      <ul class="auth__points">
+        {% block auth_panel_points %}
+        <li>Explore CAD, mechanisms, and complete robots</li>
+        <li>See how real teams built theirs</li>
+        <li>Share your designs and get useful feedback</li>
+        {% endblock %}
+      </ul>
+    </div>
+    <p>An independent, community-built design archive.</p>
+  </aside>
+</div>
+{% endblock %}

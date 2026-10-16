@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Tags &mdash; Botfolio{% endblock %}
+
+{% block content %}
+<h1>Tag Directory</h1>
+<p class="sub">Find the words teams use to describe mechanisms, components, and design ideas.</p>
+<p class="sub">Tags are suggested by the community and voted on for each design,
+  so the directory grows around the terms people actually use.</p>
+
+<div class="tag-toolbar">
+  <form method="get" class="filters tag-search" role="search">
+    <label class="sr-only" for="tag-query">Search tags</label>
+    <input class="filters__q" id="tag-query" name="q" value="{{ q }}" placeholder="Search tags, mechanisms, or concepts..." maxlength="80">
+    <button class="btn btn--primary" type="submit">Search</button>
+    {% if q %}<a class="btn btn--quiet" href="{{ url_for('tag_directory') }}">Clear</a>{% endif %}
+  </form>
+
+  {% if current_user %}
+    <form method="post" class="tag-add tag-add--toolbar">
+      <label class="sr-only" for="new-tag">Suggest a new tag</label>
+      <input id="new-tag" name="name" placeholder="Suggest a new tag..." maxlength="40" required>
+      <button class="btn btn--primary" type="submit">Add tag</button>
+    </form>
+  {% endif %}
+</div>
+{% if q %}<p class="sub">{{ tags|length }} result{{ '' if tags|length == 1 else 's' }} for &ldquo;{{ q }}&rdquo;</p>{% endif %}
+
+{% if not current_user %}
+  <p class="sub"><a href="{{ url_for('login') }}">Sign in</a> to suggest a tag.</p>
+{% endif %}
+
+{% if tags %}
+  <table class="table">
+    <thead>
+      <tr><th>Tag</th><th>Designs</th><th>Coined by</th></tr>
+    </thead>
+    <tbody>
+      {% for t in tags %}
+        <tr>
+          <td><a class="tag" href="{{ url_for('gallery', q=t['name']) }}">{{ t['name']|tagcase }}</a></td>
+          <td>{{ t['uses'] }}</td>
+          <td class="muted">
+            {% if t['coined_by'] %}
+              <a href="{{ url_for('profile', username=t['coined_by']) }}">{{ t['coined_by'] }}</a>
+            {% else %}&mdash;{% endif %}
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% else %}
+  <p class="empty">{% if q %}No tags match &ldquo;{{ q }}&rdquo;. Try a shorter term or <a href="{{ url_for('tag_directory') }}">view every tag</a>.{% else %}No tags yet. Help build the directory by suggesting the first one.{% endif %}</p>
+{% endif %}
+{% endblock %}

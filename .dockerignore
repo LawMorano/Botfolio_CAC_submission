@@ -1,0 +1,35 @@
+# Keep the build context small and, more importantly, keep secrets and local
+# data out of the image. Anything listed here is never sent to the builder.
+
+# Secrets. .env is gitignored but Docker does not read .gitignore, so without
+# this line a local .env with the Gemini key would be baked into the image.
+.env
+.config
+
+# Local database and uploads. Shipping designhub.db inside the image would mean
+# every deploy silently reverts production data to whatever was on the laptop
+# that built it.
+*.db
+*.sqlite3
+static/uploads/*
+static/models/*
+!static/uploads/.gitkeep
+!static/models/.gitkeep
+
+.git
+.github
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+
+# Documentation and tooling are not needed at runtime.
+docs/
+*.md
+!README.md
+.claude/
+.vscode/
+.idea/

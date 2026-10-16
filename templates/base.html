@@ -1,0 +1,272 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Home - Botfolio{% endblock %}</title>
+  <meta name="description" content="{% block meta_description %}Discover robot designs, CAD models, build ideas, and engineering feedback from the Botfolio community.{% endblock %}">
+  <meta property="og:title" content="{% block og_title %}Botfolio &mdash; robotics design community{% endblock %}">
+  <meta property="og:description" content="{% block og_description %}Explore and share robot mechanisms, CAD models, and practical build knowledge.{% endblock %}">
+  <meta property="og:type" content="{% block og_type %}website{% endblock %}">
+  <meta property="og:url" content="{{ request.url }}">
+  <meta property="og:image" content="{% block og_image %}{{ url_for('static', filename='images/botfolio-logo.png', _external=True) }}{% endblock %}">
+  <meta property="og:site_name" content="Botfolio">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="{% block twitter_title %}Botfolio &mdash; robotics design community{% endblock %}">
+  <meta name="twitter:description" content="{% block twitter_description %}Explore and share robot mechanisms, CAD models, and practical build knowledge.{% endblock %}">
+  <meta name="twitter:image" content="{% block twitter_image %}{{ url_for('static', filename='images/botfolio-logo.png', _external=True) }}{% endblock %}">
+  {# Canonical URL: tells search engines the one real address for this page, so
+     the same content reached with tracking parameters or a trailing query
+     isn't treated as duplicate pages competing with each other. base_url is
+     the address without the query string; pages that need query-specific
+     canonicals override this block. #}
+  <link rel="canonical" href="{% block canonical %}{{ request.base_url }}{% endblock %}">
+  <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/favicon.png') }}">
+
+  {# Structured data (JSON-LD): a machine-readable description of what this site
+     is. It lets a search engine show the Botfolio name and logo, and offer a
+     search box straight in the results, instead of guessing from page text.
+     Individual pages add their own richer entries via the block below. #}
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Organization",
+        "@id": "{{ url_for('index', _external=True) }}#organization",
+        "name": "Botfolio",
+        "url": "{{ url_for('index', _external=True) }}",
+        "logo": "{{ url_for('static', filename='images/botfolio-logo.png', _external=True) }}"
+      },
+      {
+        "@type": "WebSite",
+        "@id": "{{ url_for('index', _external=True) }}#website",
+        "name": "Botfolio",
+        "url": "{{ url_for('index', _external=True) }}",
+        "publisher": { "@id": "{{ url_for('index', _external=True) }}#organization" },
+        "potentialAction": {
+          "@type": "SearchAction",
+          "target": {
+            "@type": "EntryPoint",
+            "urlTemplate": "{{ url_for('site_search', _external=True) }}?q={search_term_string}"
+          },
+          "query-input": "required name=search_term_string"
+        }
+      }
+    ]
+  }
+  </script>
+  {% block structured_data %}{% endblock %}
+
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='20260916-no-competitions') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='enhance.css') }}">
+
+  {# Picks the visual tier before first paint so the page never flashes the
+     wrong one. A saved override ("high"/"low") wins; otherwise we weigh a few
+     capability signals and default mobile / weak / data-saving devices to the
+     lightweight "low" tier. enhance.css keys every heavy effect off data-perf. #}
+  <script>
+    (function () {
+      var root = document.documentElement, saved = null;
+      try { saved = localStorage.getItem('botfolio-perf'); } catch (e) {}
+      var mode = (saved === 'high' || saved === 'low') ? saved : 'auto', tier = mode;
+      if (mode === 'auto') {
+        var score = 0;
+        try {
+          if (matchMedia('(prefers-reduced-motion: reduce)').matches) score += 2;
+          if (matchMedia('(pointer: coarse)').matches) score += 1;
+          if (matchMedia('(max-width: 900px)').matches) score += 1;
+          var conn = navigator.connection;
+          if (conn && (conn.saveData || /(^|\b)(slow-2g|2g|3g)$/.test(conn.effectiveType || ''))) score += 2;
+          if (typeof navigator.deviceMemory === 'number' && navigator.deviceMemory < 4) score += 1;
+          if (typeof navigator.hardwareConcurrency === 'number' && navigator.hardwareConcurrency < 4) score += 1;
+        } catch (e) {}
+        tier = score >= 2 ? 'low' : 'high';
+      }
+      root.dataset.perf = tier;
+      root.dataset.perfMode = mode;
+    })();
+  </script>
+
+  {# Resolves the bare "three" specifier that the vendored addons import.
+     Everything is local: no CDN, so the app still works offline. #}
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "/static/vendor/three/three.module.js",
+      "three/addons/": "/static/vendor/three/addons/"
+    }
+  }
+  </script>
+
+  {# Arms the scroll-in reveals before the first paint. Skipped on the low tier
+     (and for reduced motion / no IntersectionObserver), where style.css then
+     never hides anything and every page renders as plain static markup. #}
+  <script>
+    if (window.IntersectionObserver
+        && document.documentElement.dataset.perf !== 'low'
+        && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      document.documentElement.classList.add('reveal-on');
+    }
+  </script>
+  <script src="{{ url_for('static', filename='reveal.js') }}" defer></script>
+  <script src="{{ url_for('static', filename='global-search.js') }}" defer></script>
+  <script src="{{ url_for('static', filename='perf-tier.js') }}" defer></script>
+  <script src="{{ url_for('static', filename='island.js') }}" defer></script>
+  <script src="{{ url_for('static', filename='command-palette.js') }}" defer></script>
+  <script src="{{ url_for('static', filename='shortcuts.js') }}" defer></script>
+  <script src="{{ url_for('static', filename='interactive.js') }}" defer></script>
+  {% block head %}{% endblock %}
+</head>
+<body>
+
+{# Scroll-driven reading-progress bar. Decorative + high-tier only: island.js
+   leaves it collapsed on the lite tier / reduced motion, and it is aria-hidden. #}
+<div class="reading-progress" data-reading-progress aria-hidden="true"><span class="reading-progress__fill"></span></div>
+
+<header class="topbar">
+  <a class="brand" href="{{ url_for('index') }}" aria-label="Botfolio home">
+    <img class="brand__mark-basic" src="{{ url_for('static', filename='images/botfolio-mark.png') }}" alt="">
+    <img class="brand__word" src="{{ url_for('static', filename='images/botfolio-wordmark.png') }}" alt="">
+  </a>
+  <nav class="topbar__nav">
+    <a href="{{ url_for('gallery') }}">Gallery</a>
+    <a href="{{ url_for('tag_directory') }}">Tags</a>
+    <a href="{{ url_for('team_list') }}">Teams</a>
+    <a class="topbar__founding" href="{{ url_for('founding_50') }}">Founding 50</a>
+  </nav>
+  <form class="global-search" action="{{ url_for('site_search') }}" method="get" role="search" data-global-search data-search-endpoint="{{ url_for('global_search_api') }}">
+    <label class="sr-only" for="global-search-input">Search Botfolio</label>
+    <span class="global-search__icon" aria-hidden="true"></span>
+    <input id="global-search-input" name="q" type="search" value="{{ request.args.get('q', '') if request.endpoint == 'site_search' else '' }}" placeholder="Search Botfolio" autocomplete="off" aria-autocomplete="list" aria-controls="global-search-results" aria-expanded="false">
+    <button class="sr-only" type="submit">Search</button>
+    <div class="global-search__results" id="global-search-results" role="listbox" hidden></div>
+  </form>
+  {% if current_user %}<a class="btn btn--primary topbar__upload" href="{{ url_for('submit') }}">+ Upload</a>{% endif %}
+  <div class="topbar__account">
+    {% if current_user %}
+      <details class="account-menu">
+        <summary aria-label="Open account menu">
+          {% if current_user['profile_image'] %}<img class="account-menu__avatar" src="{{ asset_url('uploads', current_user['profile_image']) }}" alt="">{% else %}<span class="account-menu__avatar account-menu__avatar--fallback" aria-hidden="true">{{ current_user['username'][0]|upper }}</span>{% endif %}
+          {% if unread_notifications %}<span class="account-menu__alert">{{ unread_notifications }}</span>{% endif %}
+        </summary>
+        <div class="account-menu__panel">
+          <a class="account-menu__identity" href="{{ url_for('profile', username=current_user['username']) }}"><span><strong>{{ current_user['display_name'] or current_user['username'] }}</strong><small>@{{ current_user['username'] }}</small></span>{% with role=current_user['ftc_role'], admin=current_user['is_admin'] %}{% include '_role_badge.html' %}{% endwith %}</a>
+          <a href="{{ url_for('account_settings') }}">Account settings</a>
+          <a href="{{ url_for('my_team') }}">My Team</a>
+          <a href="{{ url_for('library') }}">My Library</a>
+          <a href="{{ url_for('notifications') }}">Notifications{% if unread_notifications %}<span class="notification-count">{{ unread_notifications }}</span>{% endif %}</a>
+          {% if current_user['is_admin'] %}<a href="{{ url_for('admin_stats') }}">Growth stats</a><a href="{{ url_for('comment_moderation') }}">Moderation</a><a href="{{ url_for('security_incidents') }}">Incidents</a>{% endif %}
+          <form method="post" action="{{ url_for('logout') }}">
+            <button type="submit">Sign out</button>
+          </form>
+        </div>
+      </details>
+    {% else %}
+      <a href="{{ url_for('login') }}">Sign in</a>
+      <a class="btn btn--primary" href="{{ url_for('register') }}">Create account</a>
+    {% endif %}
+  </div>
+</header>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    <div class="flashes">
+      {% for category, message in messages %}
+        <div class="flash flash--{{ category }}">{{ message }}</div>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endwith %}
+
+<main class="page {% block page_class %}{% endblock %}">
+  {% block content %}{% endblock %}
+</main>
+
+<footer class="footer">
+  <p>&copy; 2026 Botfolio LLC. All rights reserved.</p>
+  <p><a href="{{ url_for('help') }}">Help</a> | <a href="{{ url_for('terms') }}">Terms of Use</a> | <a href="{{ url_for('privacy') }}">Privacy Policy</a> | <a href="{{ url_for('community_rules') }}">Community Rules</a> | <a href="{{ url_for('copyright_policy') }}">Copyright &amp; Takedowns</a> | <a href="{{ url_for('report_content') }}">Report Content</a> | <a href="{{ url_for('contact') }}">Contact</a></p>
+  <p>Botfolio is an independent educational platform and is not affiliated with, endorsed by, sponsored by, or operated by FIRST&reg;, FIRST Tech Challenge&reg;, VEX Robotics&reg;, or any other robotics competition organization referenced on this site.</p>
+  <div class="footer__controls">
+    <div class="perf-toggle" data-perf-toggle role="group" aria-label="Visual detail level">
+      <span class="perf-toggle__label">Visual detail</span>
+      <button type="button" data-perf-set="auto">Auto</button>
+      <button type="button" data-perf-set="high">Full</button>
+      <button type="button" data-perf-set="low">Lite</button>
+    </div>
+  </div>
+</footer>
+
+{# Command palette (⌘K / Ctrl-K). A utility, so it loads on every tier; it
+   reuses the same /api/search endpoint as the topbar search. Hidden until
+   opened; command-palette.js focus-traps it and wires the shortcut. #}
+<div class="cmdk" data-cmdk data-search-endpoint="{{ url_for('global_search_api') }}" data-search-page="{{ url_for('site_search') }}" hidden>
+  <div class="cmdk__backdrop" data-cmdk-dismiss></div>
+  <div class="cmdk__dialog" role="dialog" aria-modal="true" aria-label="Search Botfolio" aria-describedby="cmdk-hint">
+    <div class="cmdk__field">
+      <span class="cmdk__icon" aria-hidden="true"></span>
+      <input class="cmdk__input" type="text" role="combobox" aria-expanded="false" aria-controls="cmdk-results" aria-autocomplete="list" autocomplete="off" spellcheck="false" placeholder="Search designs, people, teams, tags&hellip;" aria-label="Search Botfolio">
+      <kbd class="cmdk__esc">Esc</kbd>
+    </div>
+    <div class="cmdk__results" id="cmdk-results" role="listbox" aria-label="Search results"></div>
+    <p class="cmdk__foot" id="cmdk-hint">
+      <span><kbd>&uarr;</kbd><kbd>&darr;</kbd> navigate</span>
+      <span><kbd>&crarr;</kbd> open</span>
+      <span><kbd>esc</kbd> close</span>
+    </p>
+  </div>
+</div>
+
+{# Floating back-to-top control. All tiers; island.js reveals it past a
+   scroll threshold and smooth-scrolls (respecting reduced motion). #}
+<button class="to-top" type="button" data-to-top aria-label="Back to top" hidden>
+  <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M12 19V5M6 11l6-6 6 6"></path>
+  </svg>
+</button>
+
+{# Keyboard-shortcuts help overlay, opened with "?" by shortcuts.js. #}
+<div class="shortcuts" data-shortcuts hidden>
+  <div class="shortcuts__backdrop" data-shortcuts-dismiss></div>
+  <div class="shortcuts__card" role="dialog" aria-modal="true" aria-labelledby="shortcuts-title">
+    <h2 id="shortcuts-title">Keyboard shortcuts</h2>
+    <dl class="shortcuts__list">
+      <div><dt><kbd>/</kbd></dt><dd>Focus search</dd></div>
+      <div><dt><kbd>Ctrl</kbd><kbd>K</kbd></dt><dd>Open command palette</dd></div>
+      <div><dt><kbd>g</kbd> <kbd>g</kbd></dt><dd>Go to Gallery</dd></div>
+      <div><dt><kbd>g</kbd> <kbd>t</kbd></dt><dd>Go to Teams</dd></div>
+      <div><dt><kbd>g</kbd> <kbd>x</kbd></dt><dd>Go to Tags</dd></div>
+      <div><dt><kbd>g</kbd> <kbd>h</kbd></dt><dd>Go Home</dd></div>
+      <div><dt><kbd>?</kbd></dt><dd>Show this help</dd></div>
+      <div><dt><kbd>Esc</kbd></dt><dd>Close overlays</dd></div>
+    </dl>
+    <button class="shortcuts__close" type="button" data-shortcuts-dismiss aria-label="Close">Close</button>
+  </div>
+</div>
+
+{% block scripts %}{% endblock %}
+<script>
+// Add the session CSRF token to every state-changing HTML form.
+document.querySelectorAll('form[method="post" i]').forEach((form) => {
+  if (!form.querySelector('[name="csrf_token"]')) {
+    const input=document.createElement('input'); input.type='hidden'; input.name='csrf_token';
+    input.value={{ csrf_token()|tojson }}; form.prepend(input);
+  }
+});
+// Keep password visibility keyboard-accessible and announce its current state.
+document.querySelectorAll('[data-password-toggle]').forEach((button) => {
+  button.addEventListener('click', () => {
+    const input=document.getElementById(button.dataset.passwordToggle);
+    const showing=input.type === 'text'; input.type=showing ? 'password' : 'text';
+    button.textContent=showing ? 'Show' : 'Hide'; button.setAttribute('aria-pressed', String(!showing));
+    button.setAttribute('aria-label', showing ? 'Show password' : 'Hide password');
+  });
+});
+document.querySelectorAll('[data-invite-url]').forEach((button) => button.addEventListener('click', async () => {
+  const url=button.dataset.inviteUrl;
+  try { await navigator.clipboard.writeText(url); button.textContent='Invitation link copied'; }
+  catch (_) { window.prompt('Copy invitation link', url); }
+}));
+</script>
+</body>
+</html>

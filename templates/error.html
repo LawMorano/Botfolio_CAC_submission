@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}{{ code }} &mdash; Botfolio{% endblock %}
+
+{% block content %}
+<div class="narrow center">
+  <h1 class="error-code">{{ code }}</h1>
+  <p class="sub">{{ message }}</p>
+  <a class="btn btn--primary" href="{{ url_for('index') }}">Back to the home page</a>
+</div>
+{% endblock %}

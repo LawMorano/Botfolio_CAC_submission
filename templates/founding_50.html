@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}Founding 50 &mdash; Botfolio{% endblock %}
+
+{% block content %}
+<main class="founding-premium">
+  <div class="founding-confetti" data-founding-confetti aria-hidden="true"></div>
+  <header class="page-head founding-premium__hero">
+    <div class="founding-premium__crest" aria-hidden="true">50</div>
+    <p class="eyebrow">A permanent part of Botfolio history</p>
+    <h1>Founding 50</h1>
+    <p class="sub">The first 50 registered teams to publish a legitimate team design, preserved forever in the order they qualified.</p>
+    <div class="founding-premium__progress">
+      <strong>{{ teams|length }} of {{ limit }}</strong>
+      <span>Founding Team spots claimed</span>
+    </div>
+  </header>
+
+  <section class="founding-list" aria-label="Founding teams">
+    {% if teams %}
+      <ol>
+        {% for team in teams %}
+          <li>
+            <span class="founding-rank">#{{ '%02d'|format(team['founding_rank']) }}</span>
+            <a href="{{ url_for('team_detail', program='ftc', number=team['number']) }}">
+              <small>Founding Team</small>
+              <strong>Team {{ team['number'] }} &mdash; {{ team['name'] }}</strong>
+            </a>
+          </li>
+        {% endfor %}
+      </ol>
+    {% else %}
+      <p class="empty">No team has qualified yet. Register a named team and publish the first legitimate team design.</p>
+    {% endif %}
+  </section>
+</main>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(() => {
+  const holder = document.querySelector('[data-founding-confetti]');
+  if (!holder || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  try {
+    if (sessionStorage.getItem('botfolio-founding-50-celebrated')) return;
+    sessionStorage.setItem('botfolio-founding-50-celebrated', '1');
+  } catch (_) {}
+  const colours = ['#fff3b0', '#ffd45c', '#e5b84f', '#c88a18', '#ffffff'];
+  for (let i = 0; i < 72; i += 1) {
+    const piece = document.createElement('i');
+    piece.style.setProperty('--confetti-x', `${Math.random() * 100}vw`);
+    piece.style.setProperty('--confetti-delay', `${Math.random() * .9}s`);
+    piece.style.setProperty('--confetti-duration', `${2.4 + Math.random() * 2}s`);
+    piece.style.setProperty('--confetti-drift', `${(Math.random() - .5) * 180}px`);
+    piece.style.setProperty('--confetti-colour', colours[i % colours.length]);
+    holder.appendChild(piece);
+  }
+  setTimeout(() => holder.replaceChildren(), 5200);
+})();
+</script>
+{% endblock %}
