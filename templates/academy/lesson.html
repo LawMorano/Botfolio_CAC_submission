@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% block title %}{{ lesson.title }} · {{ course.title }} · {{ pathway.name }} — Botfolio{% endblock %}
+{% block meta_description %}{{ lesson.summary }} A {{ lesson.estimated_minutes }}-minute {{ pathway.name }} lesson from Botfolio CAD Academy.{% endblock %}
+{% block page_class %}academy academy--lesson{% endblock %}
+{% block content %}
+<nav class="academy__crumbs" aria-label="Breadcrumb"><a href="{{ url_for('learn') }}">CAD Academy</a><span aria-hidden="true">/</span><a href="{{ url_for('learn_pathway', platform=platform) }}">{{ pathway.name }}</a><span aria-hidden="true">/</span><a href="{{ url_for('learn_course', platform=platform, course_slug=course.slug) }}">{{ course.title }}</a><span aria-hidden="true">/</span><span aria-current="page">{{ lesson.title }}</span></nav>
+
+<header class="academy__hero academy__lesson-hero">
+  <p class="eyebrow">{{ pathway.name }} · {{ course.title }} · Lesson {{ lesson_number }} of {{ course.lessons|length }}</p>
+  <h1>{{ lesson.title }}</h1>
+  <p class="academy__lead">{{ lesson.summary }}</p>
+  <dl class="academy__facts academy__facts--hero">
+    <div><dt>Learning outcome</dt><dd>{{ lesson.outcome }}</dd></div>
+    <div><dt>Estimated time</dt><dd>{{ lesson.estimated_minutes }} min</dd></div>
+  </dl>
+</header>
+
+<nav class="academy__edition" aria-label="Lesson edition">
+  <strong>Choose a platform edition</strong>
+  <a href="{{ url_for('learn_lesson', platform=platform, course_slug=course.slug, lesson_id=lesson.id) }}" aria-current="page">{{ pathway.name }} · Current edition</a>
+  {% if other_lesson %}<a href="{{ url_for('learn_lesson', platform=other_platform, course_slug=other_course.slug, lesson_id=other_lesson.id) }}">{{ other.name }} edition</a>{% endif %}
+</nav>
+
+<div class="academy__lesson-layout">
+  <aside class="academy__toc academy__card">
+    <nav aria-label="On this page">
+      <h2>On this page</h2>
+      <ol>
+        <li><a href="#relevance">FTC relevance</a></li>
+        <li><a href="#concepts">Concepts and setup</a></li>
+        <li><a href="#build">Build steps</a></li>
+        <li><a href="#checkpoints">Checkpoints</a></li>
+        <li><a href="#mistakes">Common mistakes</a></li>
+        <li><a href="#practice">Independent practice</a></li>
+        <li><a href="#complete">Completion checklist</a></li>
+      </ol>
+      <a href="{{ url_for('learn_course', platform=platform, course_slug=course.slug) }}">Course overview</a>
+    </nav>
+  </aside>
+
+  <article class="academy__lesson-body">
+    <section id="relevance" class="academy__callout academy__callout--relevance" aria-labelledby="relevance-title">
+      <h2 id="relevance-title">Why this matters in FTC</h2><p>{{ lesson.ftc_relevance }}</p>
+    </section>
+
+    <section id="concepts" class="academy__section academy__card" aria-labelledby="concepts-title">
+      <h2 id="concepts-title">Concepts and setup</h2>
+      <h3>Concepts introduced</h3>
+      <ul class="academy__tag-list">{% for concept in lesson.concepts %}<li>{{ concept }}</li>{% endfor %}</ul>
+      <h3>Required setup</h3>
+      <ul>{% for item in lesson.required_setup %}<li>{{ item }}</li>{% endfor %}</ul>
+      {% if lesson.reference_specifications %}<h3>Reference specifications</h3><p>Use selected-hardware values; label anything unverified as provisional.</p><ul class="academy__compact-grid">{% for item in lesson.reference_specifications %}<li>{{ item }}</li>{% endfor %}</ul>{% endif %}
+    </section>
+
+    <section id="build" class="academy__section" aria-labelledby="build-title">
+      <h2 id="build-title">Build steps</h2>
+      <ol class="academy__steps">
+        {% for step in lesson.steps %}
+        <li class="academy__card academy__step">
+          <h3>{{ step.title }}</h3>
+          <div class="academy__step-action"><strong>Do this</strong><p>{{ step.action }}</p></div>
+          <aside class="academy__callout academy__callout--reason" aria-label="Reasoning"><strong>Why it matters</strong><p>{{ step.reason }}</p></aside>
+          <aside class="academy__callout academy__callout--result" aria-label="Observable result"><strong>Look for</strong><p>{{ step.result }}</p></aside>
+          {% if step.note %}<aside class="academy__callout academy__callout--warning" aria-label="Warning"><strong>Watch out</strong><p>{{ step.note }}</p></aside>{% endif %}
+        </li>
+        {% endfor %}
+      </ol>
+    </section>
+
+    <section id="checkpoints" class="academy__section academy__card" aria-labelledby="checkpoints-title">
+      <h2 id="checkpoints-title">Checkpoints</h2>
+      <ul class="academy__check-list">{% for item in lesson.checkpoints %}<li>{{ item }}</li>{% endfor %}</ul>
+    </section>
+
+    <section id="mistakes" class="academy__section academy__card" aria-labelledby="mistakes-title">
+      <h2 id="mistakes-title">Common mistakes and recovery</h2>
+      <ul>{% for item in lesson.common_mistakes %}<li>{{ item }}</li>{% endfor %}</ul>
+    </section>
+
+    <section id="practice" class="academy__section academy__callout academy__callout--practice" aria-labelledby="practice-title">
+      <h2 id="practice-title">Independent practice</h2><p>{{ lesson.practice }}</p>
+    </section>
+
+    <section id="complete" class="academy__section academy__card" aria-labelledby="complete-title">
+      <h2 id="complete-title">Completion checklist</h2>
+      <ul class="academy__check-list">{% for item in lesson.completion_checklist %}<li>{{ item }}</li>{% endfor %}</ul>
+      {% if lesson.vocabulary %}<h3>Vocabulary</h3><p>{{ lesson.vocabulary|join(' · ') }}</p>{% endif %}
+      {% if lesson.media %}<h3>Media placeholders</h3>{% for item in lesson.media %}<p class="academy__resource-note">{{ item }}</p>{% endfor %}{% endif %}
+    </section>
+
+    <nav class="academy__lesson-nav" aria-label="Lesson navigation">
+      <div>{% if previous_lesson %}<span>Previous lesson</span><a href="{{ url_for('learn_lesson', platform=platform, course_slug=course.slug, lesson_id=previous_lesson.id) }}">← {{ previous_lesson.title }}</a>{% endif %}</div>
+      <a class="academy__overview-link" href="{{ url_for('learn_course', platform=platform, course_slug=course.slug) }}">Course overview</a>
+      <div class="academy__lesson-nav-next">{% if next_lesson %}<span>Next lesson</span><a href="{{ url_for('learn_lesson', platform=platform, course_slug=course.slug, lesson_id=next_lesson.id) }}">{{ next_lesson.title }} →</a>{% endif %}</div>
+    </nav>
+  </article>
+</div>
+{% endblock %}

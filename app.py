@@ -1269,7 +1269,7 @@ def require_account_setup():
             and endpoint not in {
                 "account_setup", "account_setup_interests", "account_setup_role",
                 "account_setup_team", "terms", "logout", "static",
-                "learn", "learn_pathway", "learn_course",
+                "learn", "learn_pathway", "learn_course", "learn_lesson",
             }):
         return redirect(url_for("account_setup"))
 
@@ -2413,6 +2413,26 @@ def site_search_results(conn, raw_query, limit=6):
             groups[4]["items"].append(
                 {"title": title, "subtitle": "Botfolio page", "url": url_for(endpoint)}
             )
+            if len(groups[4]["items"]) >= limit:
+                break
+    if len(groups[4]["items"]) < limit:
+        from academy.catalog import CATALOG, PATHWAYS
+        for platform, courses in CATALOG.items():
+            for course in courses:
+                if course["status"] != "Live":
+                    continue
+                searchable = " ".join((course["title"], course["summary"], course["outcome"],
+                                       PATHWAYS[platform]["name"], *course["skills"]))
+                if lowered not in searchable.casefold():
+                    continue
+                groups[4]["items"].append({
+                    "title": course["title"],
+                    "subtitle": f"{PATHWAYS[platform]['name']} CAD Academy course",
+                    "url": url_for("learn_course", platform=platform,
+                                   course_slug=course["slug"]),
+                })
+                if len(groups[4]["items"]) >= limit:
+                    break
             if len(groups[4]["items"]) >= limit:
                 break
     return groups

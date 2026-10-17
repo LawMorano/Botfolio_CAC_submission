@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block title %}{{ course.title }} · {{ pathway.name }} — CAD Academy — Botfolio{% endblock %}
-{% block meta_description %}Build and review an FTC parallel-plate drivetrain in {{ pathway.name }}.{% endblock %}
+{% block meta_description %}{{ course.summary }} Learn in {{ pathway.name }} with step-by-step FTC CAD lessons.{% endblock %}
 {% block page_class %}academy academy--course{% endblock %}
 {% block content %}
 <nav class="academy__crumbs" aria-label="Breadcrumb"><a href="{{ url_for('learn') }}">CAD Academy</a><span aria-hidden="true">/</span><a href="{{ url_for('learn_pathway', platform=platform) }}">{{ pathway.name }}</a><span aria-hidden="true">/</span><span aria-current="page">{{ course.title }}</span></nav>
@@ -10,11 +10,12 @@
   <p class="academy__lead">{{ pathway.name }} edition</p>
   <p>{{ course.summary }}</p>
   <dl class="academy__facts academy__facts--hero">
-    <div><dt>Difficulty</dt><dd>{{ course.difficulty }}</dd></div>
+    <div><dt>Outcome</dt><dd>{{ course.outcome }}</dd></div>
     <div><dt>Estimated time</dt><dd>{{ course.duration_minutes }} min</dd></div>
-    <div><dt>Prerequisites</dt><dd>{{ course.prerequisites|join(', ') }}</dd></div>
-    <div><dt>Required tools and libraries</dt><dd>{{ course.tools|join('; ') }}</dd></div>
-    <div><dt>Skills earned</dt><dd>{{ course.skills|join(', ') }}</dd></div>
+    <div><dt>Difficulty</dt><dd>{{ course.difficulty }}</dd></div>
+    <div><dt>Prerequisites</dt><dd>{{ course.prerequisites|join(', ') if course.prerequisites else 'None' }}</dd></div>
+    <div><dt>Required tools</dt><dd>{{ course.tools|join('; ') }}</dd></div>
+    <div><dt>Skills</dt><dd>{{ course.skills|join(', ') }}</dd></div>
   </dl>
 </header>
 
@@ -24,37 +25,43 @@
   {% if other_course and other_course.status == 'Live' %}<a href="{{ url_for('learn_course', platform=other_platform, course_slug=other_course.slug) }}">{{ other.name }} edition</a>{% endif %}
 </nav>
 
-<div class="academy__course-layout">
+<div class="academy__overview-layout">
   <aside class="academy__toc academy__card">
-    <nav aria-label="Lesson navigation">
-      <h2>In this course</h2>
+    <nav aria-label="Course contents">
+      <h2>Course contents</h2>
       <ol>{% for lesson in course.lessons %}<li><a href="#lesson-{{ lesson.id }}">{{ lesson.title }}</a></li>{% endfor %}</ol>
       <a href="#design-challenge">Final design challenge</a>
     </nav>
   </aside>
   <div class="academy__course-body">
     <section class="academy__section academy__card" aria-labelledby="brief-title">
-      <h2 id="brief-title">Engineering brief</h2>
+      <h2 id="brief-title">Course brief</h2>
       <p>{{ course.brief }}</p>
       <h3>Learning objectives</h3>
       <ul>{% for objective in course.objectives %}<li>{{ objective }}</li>{% endfor %}</ul>
-      <h3>FTC design constraints</h3>
+      <h3>Design constraints</h3>
       <ul>{% for constraint in course.constraints %}<li>{{ constraint }}</li>{% endfor %}</ul>
-      <p><strong>Finished artifact:</strong> {{ course.outcome }}</p>
-      <p class="academy__resource-note"><strong>Supporting resources · Coming next:</strong> guided video, starter CAD, and checkpoint images.</p>
+      {% if course.reference_specifications %}
+      <h3>Reference specifications to collect</h3>
+      <p>Use values from selected hardware and mark every unverified value as provisional.</p>
+      <ul class="academy__compact-grid">{% for specification in course.reference_specifications %}<li>{{ specification }}</li>{% endfor %}</ul>
+      {% endif %}
+      <p class="academy__resource-note"><strong>Assets still needed:</strong> guided videos, starter CAD, diagrams, and checkpoint images. These placeholders are informational and are not downloads.</p>
     </section>
 
     <section class="academy__section" aria-labelledby="lessons-title">
-      <h2 id="lessons-title">Lessons</h2>
-      <ol class="academy__lesson-list">
+      <div class="section-head"><h2 id="lessons-title">Lessons</h2><p>{{ course.lessons|length }} lessons · {{ course.duration_minutes }} minutes</p></div>
+      <ol class="academy__lesson-cards">
         {% for lesson in course.lessons %}
-        <li id="lesson-{{ lesson.id }}" class="academy__card academy__lesson">
-          <p class="eyebrow">Lesson {{ loop.index }} of {{ course.lessons|length }}</p>
-          <h3>{{ lesson.title }}</h3>
-          <p>{{ lesson.concept }}</p>
-          <p><strong>In {{ pathway.name }}:</strong> {{ lesson.step }}</p>
-          <aside class="academy__callout" aria-label="Checkpoint"><strong>Checkpoint</strong><p>{{ lesson.checkpoint }}</p></aside>
-          <aside class="academy__callout academy__callout--debug" aria-label="Common failure"><strong>Common failure to check</strong><p>{{ lesson.troubleshooting }}</p></aside>
+        <li id="lesson-{{ lesson.id }}" class="academy__card academy__lesson-card">
+          <div class="academy__lesson-card-number" aria-hidden="true">{{ loop.index }}</div>
+          <div>
+            <p class="eyebrow">Lesson {{ loop.index }} of {{ course.lessons|length }} · {{ lesson.estimated_minutes }} min</p>
+            <h3>{{ lesson.title }}</h3>
+            <p>{{ lesson.summary }}</p>
+            <p class="academy__concepts"><strong>Concepts:</strong> {{ lesson.concepts|join(', ') }}</p>
+            <a class="btn btn--primary" href="{{ url_for('learn_lesson', platform=platform, course_slug=course.slug, lesson_id=lesson.id) }}">Start lesson</a>
+          </div>
         </li>
         {% endfor %}
       </ol>
@@ -63,8 +70,7 @@
     <section id="design-challenge" class="academy__section academy__card" aria-labelledby="challenge-title">
       <h2 id="challenge-title">Final design challenge</h2>
       <p>{{ course.challenge }}</p>
-      <h3>Portfolio artifact requirements</h3>
-      <p>Prepare these items for your portfolio. Publishing and submissions are coming next.</p>
+      <h3>Artifact requirements</h3>
       <ul>{% for artifact in course.artifacts %}<li>{{ artifact }}</li>{% endfor %}</ul>
       <h3>Assessment rubric</h3>
       <dl class="academy__rubric">{% for row in course.rubric %}<div><dt>{{ row.criterion }}</dt><dd>{{ row.evidence }}</dd></div>{% endfor %}</dl>
