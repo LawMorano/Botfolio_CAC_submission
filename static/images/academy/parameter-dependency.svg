@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 860 420" role="img" aria-labelledby="title desc">
+  <title id="title">Parameter dependency flow</title>
+  <desc id="desc">Verified hardware values and design choices flow into named parameters, expressions, sketch geometry, and the finished plate.</desc>
+  <defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0 0L9 3L0 6Z" fill="#e87836"/></marker></defs>
+  <rect width="860" height="420" rx="24" fill="#f5f7fb"/>
+  <g font-family="Arial,sans-serif" text-anchor="middle"><g font-size="20" font-weight="700" fill="#183153"><rect x="35" y="65" width="190" height="80" rx="14" fill="#dbeafe" stroke="#183153" stroke-width="3"/><text x="130" y="98">Verified hardware</text><text x="130" y="125">dimensions</text><rect x="35" y="275" width="190" height="80" rx="14" fill="#fef3c7" stroke="#183153" stroke-width="3"/><text x="130" y="308">Team design</text><text x="130" y="335">choices</text><rect x="335" y="170" width="190" height="80" rx="14" fill="#dcfce7" stroke="#16784b" stroke-width="3"/><text x="430" y="203">Named parameters</text><text x="430" y="230">and expressions</text><rect x="635" y="65" width="190" height="80" rx="14" fill="#e0e7ff" stroke="#183153" stroke-width="3"/><text x="730" y="112">Sketch geometry</text><rect x="635" y="275" width="190" height="80" rx="14" fill="#dcfce7" stroke="#16784b" stroke-width="3"/><text x="730" y="308">Finished plate</text><text x="730" y="335">and checks</text></g></g>
+  <g fill="none" stroke="#e87836" stroke-width="6" marker-end="url(#arrow)"><path d="M225 105C285 105 285 190 330 200"/><path d="M225 315C285 315 285 230 330 220"/><path d="M525 195C575 180 585 120 630 110"/><path d="M730 150v120"/></g>
+  <text x="430" y="395" text-anchor="middle" font-family="Arial,sans-serif" font-size="18" fill="#183153">Dependencies flow forward; avoid circular references.</text>
+</svg>

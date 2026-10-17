@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 360" role="img" aria-labelledby="title desc">
+  <title id="title">Degrees of freedom in an unconstrained sketch</title>
+  <desc id="desc">A blue rectangle can move horizontally, vertically, and rotate around a fixed origin.</desc>
+  <defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0 0L9 3L0 6Z" fill="#e87836"/></marker></defs>
+  <rect width="720" height="360" rx="24" fill="#f5f7fb"/>
+  <g stroke="#183153" stroke-width="4" fill="none"><path d="M350 40v280M80 180h560" opacity=".22"/><circle cx="350" cy="180" r="7" fill="#183153"/><path d="M250 115h220v130H250z" fill="#dbeafe"/></g>
+  <g stroke="#e87836" stroke-width="6" fill="none" marker-end="url(#arrow)"><path d="M245 280h170"/><path d="M500 240V90"/><path d="M225 95a165 165 0 0 1 260-10"/></g>
+  <g font-family="Arial,sans-serif" font-size="22" fill="#183153" font-weight="700"><text x="268" y="315">horizontal</text><text x="520" y="170">vertical</text><text x="285" y="72">rotation</text><text x="365" y="174">origin</text></g>
+</svg>

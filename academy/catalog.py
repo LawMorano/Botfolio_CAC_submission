@@ -4,6 +4,7 @@ import re
 
 from academy.content.parallel_plate import ENGINEERING_BRIEF, OBJECTIVES, RUBRIC, build_course as build_parallel_plate
 from academy.content.quick_start import build_course as build_quick_start
+from academy.content.sketching_parameters import build_course as build_sketching_parameters
 
 LEVELS = ("Start Here", "CAD Foundations", "FTC-Ready CAD", "Mechanism Labs", "Robot Integration and Strategy")
 DIFFICULTIES = frozenset({"Beginner", "Intermediate", "Advanced"})
@@ -15,7 +16,6 @@ PATHWAYS = {
 }
 
 PLANNED = (
-    ("sketching-and-parameters", "Sketching and Parameters/Variables", "CAD Foundations", "Beginner", 75, "Make stable sketches and editable dimensions.", ("Sketch constraints", "Parameters")),
     ("parts-components-ftc-libraries", "Parts or Components and FTC Libraries", "FTC-Ready CAD", "Intermediate", 90, "Organize parts and use verified FTC hardware dimensions.", ("Part organization", "Hardware libraries")),
     ("assemblies-and-motion", "Assemblies and Motion", "FTC-Ready CAD", "Intermediate", 90, "Constrain a mechanism and inspect its motion.", ("Assembly", "Motion checks")),
     ("robot-integration-strategy", "Robot Integration and Strategy", "Robot Integration and Strategy", "Advanced", 120, "Fit a proven drivetrain into a complete robot layout and defend subsystem tradeoffs.", ("Subsystem integration", "Design tradeoffs")),
@@ -37,16 +37,18 @@ def _planned_course(platform, item):
 CATALOG = {
     platform: (
         build_quick_start(platform, pathway["name"]),
-        *(_planned_course(platform, item) for item in PLANNED[:3]),
+        build_sketching_parameters(platform, pathway["name"]),
+        *(_planned_course(platform, item) for item in PLANNED[:2]),
         build_parallel_plate(platform, pathway["name"]),
-        _planned_course(platform, PLANNED[3]),
+        _planned_course(platform, PLANNED[2]),
     )
     for platform, pathway in PATHWAYS.items()
 }
 
 COURSE_REQUIRED = {"slug", "platform", "title", "summary", "level", "difficulty", "duration_minutes", "status", "outcome", "prerequisites", "skills", "tools", "lessons", "checkpoints", "challenge", "artifacts", "rubric", "related", "equivalent_slug"}
-LESSON_REQUIRED = {"id", "title", "summary", "estimated_minutes", "outcome", "ftc_relevance", "concepts", "required_setup", "steps", "checkpoints", "common_mistakes", "practice", "completion_checklist"}
+LESSON_REQUIRED = {"id", "title", "summary", "estimated_minutes", "outcome", "ftc_relevance", "concepts", "required_setup", "steps", "checkpoints", "common_mistakes", "practice", "completion_checklist", "self_check"}
 STEP_REQUIRED = {"title", "action", "reason", "result"}
+SELF_CHECK_REQUIRED = {"question", "answer"}
 FOREIGN_TERMS = {
     "onshape": ("user parameter", "joint origin", "rigid joint", "feature timeline"),
     "fusion-360": ("part studio", "mate connector", "fastened mate"),
@@ -123,6 +125,12 @@ def validate_catalog(catalog=CATALOG):
                 lesson_ids.append(lesson["id"])
                 if not _has_text(lesson["title"]) or not _has_text(lesson["outcome"]):
                     raise ValueError("Lessons need titles and outcomes")
+                for field in ("summary", "ftc_relevance", "practice"):
+                    if not _has_text(lesson[field]):
+                        raise ValueError(f"Lessons need {field.replace('_', ' ')}")
+                for field in ("concepts", "required_setup", "checkpoints", "common_mistakes", "completion_checklist", "self_check"):
+                    if not isinstance(lesson[field], (list, tuple)) or not lesson[field]:
+                        raise ValueError(f"Lessons need {field.replace('_', ' ')}")
                 if course["status"] == "Live" and (not isinstance(lesson["estimated_minutes"], (int, float)) or lesson["estimated_minutes"] <= 0):
                     raise ValueError("Published lessons need positive durations")
                 if course["status"] == "Live" and not lesson["steps"]:
@@ -132,7 +140,15 @@ def validate_catalog(catalog=CATALOG):
                         raise ValueError("Build steps need titles, actions, reasons, and results")
                 if not lesson["checkpoints"]:
                     raise ValueError("Lessons need checkpoints")
-                text = _flatten_text(lesson).casefold()
+                for item in lesson["self_check"]:
+                    if (not isinstance(item, dict) or SELF_CHECK_REQUIRED - item.keys()
+                            or any(not _has_text(item.get(field)) for field in SELF_CHECK_REQUIRED)):
+                        raise ValueError("Self-checks need questions and answers")
+                # Aligned cross-platform titles may name both concepts (for example,
+                # "Variables or user parameters"); inspect instructional body copy,
+                # where a foreign command would actually misdirect a learner.
+                text = _flatten_text({key: value for key, value in lesson.items()
+                                      if key not in {"title", "summary"}}).casefold()
                 if any(term in text for term in FOREIGN_TERMS[platform]):
                     raise ValueError(f"Unsupported platform terminology in {platform} lesson")
 

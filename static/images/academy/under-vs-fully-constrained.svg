@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 380" role="img" aria-labelledby="title desc">
+  <title id="title">Under-constrained versus fully constrained geometry</title>
+  <desc id="desc">The left plate can shift and has a loose hole; the right plate is centered, dimensioned, and symmetric.</desc>
+  <rect width="760" height="380" rx="24" fill="#f5f7fb"/>
+  <path d="M380 35v310" stroke="#cbd5e1" stroke-width="3"/>
+  <g font-family="Arial,sans-serif" fill="#183153" text-anchor="middle"><text x="190" y="48" font-size="25" font-weight="700">Under-constrained</text><text x="570" y="48" font-size="25" font-weight="700">Fully constrained</text></g>
+  <g fill="#dbeafe" stroke="#e87836" stroke-width="5"><rect x="85" y="100" width="220" height="170" rx="10"/><circle cx="135" cy="150" r="15"/><circle cx="270" cy="225" r="15"/></g>
+  <g stroke="#e87836" stroke-width="4"><path d="M70 290h80m-40-30v60"/><path d="M285 78l35 22m-35 0l35-22"/></g>
+  <g fill="#dcfce7" stroke="#16784b" stroke-width="5"><rect x="460" y="100" width="220" height="170" rx="10"/><circle cx="510" cy="150" r="15"/><circle cx="630" cy="150" r="15"/><circle cx="510" cy="220" r="15"/><circle cx="630" cy="220" r="15"/></g>
+  <g stroke="#183153" stroke-width="3" stroke-dasharray="10 8" opacity=".65"><path d="M570 75v220M430 185h280"/></g><circle cx="570" cy="185" r="6" fill="#183153"/>
+  <g font-family="Arial,sans-serif" font-size="18" text-anchor="middle"><text x="190" y="340" fill="#9a3412">position and hole relationships can move</text><text x="570" y="340" fill="#166534">origin, symmetry, and size are defined</text></g>
+</svg>

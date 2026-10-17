@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 400" role="img" aria-labelledby="title desc">
+  <title id="title">Construction centerlines and symmetry</title>
+  <desc id="desc">A mounting plate is centered on dashed construction axes with four mirrored mounting holes.</desc>
+  <rect width="720" height="400" rx="24" fill="#f5f7fb"/>
+  <rect x="145" y="85" width="430" height="230" rx="18" fill="#dbeafe" stroke="#183153" stroke-width="5"/>
+  <g fill="#fff" stroke="#16784b" stroke-width="6"><circle cx="245" cy="145" r="20"/><circle cx="475" cy="145" r="20"/><circle cx="245" cy="255" r="20"/><circle cx="475" cy="255" r="20"/></g>
+  <g stroke="#e87836" stroke-width="4" stroke-dasharray="12 9"><path d="M360 40v320"/><path d="M95 200h530"/></g><circle cx="360" cy="200" r="8" fill="#183153"/>
+  <g stroke="#183153" stroke-width="3" fill="none"><path d="M245 120V72h230v48"/><path d="M610 145h48v110h-48"/></g>
+  <g font-family="Arial,sans-serif" font-size="20" fill="#183153" text-anchor="middle"><text x="360" y="65">shared horizontal spacing</text><text x="640" y="195" transform="rotate(90 640 195)">shared vertical spacing</text><text x="360" y="388">construction axes preserve the plate center</text></g>
+</svg>

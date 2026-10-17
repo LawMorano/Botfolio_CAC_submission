@@ -30,7 +30,7 @@ def _step(title, action, reason, result, note=""):
 
 def _lesson(identifier, title, summary, minutes, outcome, relevance, concepts, setup,
             steps, checkpoints, mistakes, practice, checklist, vocabulary=(),
-            specifications=(), media=()):
+            specifications=(), media=(), self_check=()):
     return {
         "id": identifier, "title": title, "summary": summary,
         "estimated_minutes": minutes, "outcome": outcome, "ftc_relevance": relevance,
@@ -39,6 +39,7 @@ def _lesson(identifier, title, summary, minutes, outcome, relevance, concepts, s
         "practice": practice, "completion_checklist": checklist,
         "vocabulary": vocabulary, "reference_specifications": specifications,
         "media": media,
+        "self_check": self_check or ({"question": "What result shows this lesson's outcome is complete?", "answer": outcome},),
     }
 
 

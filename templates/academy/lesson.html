@@ -32,6 +32,7 @@
         <li><a href="#checkpoints">Checkpoints</a></li>
         <li><a href="#mistakes">Common mistakes</a></li>
         <li><a href="#practice">Independent practice</a></li>
+        <li><a href="#self-check">Self-check</a></li>
         <li><a href="#complete">Completion checklist</a></li>
       </ol>
       <a href="{{ url_for('learn_course', platform=platform, course_slug=course.slug) }}">Course overview</a>
@@ -50,6 +51,11 @@
       <h3>Required setup</h3>
       <ul>{% for item in lesson.required_setup %}<li>{{ item }}</li>{% endfor %}</ul>
       {% if lesson.reference_specifications %}<h3>Reference specifications</h3><p>Use selected-hardware values; label anything unverified as provisional.</p><ul class="academy__compact-grid">{% for item in lesson.reference_specifications %}<li>{{ item }}</li>{% endfor %}</ul>{% endif %}
+      {% if lesson.media %}
+      <div class="academy__media-grid">
+        {% for item in lesson.media if item is mapping %}<figure class="academy__diagram"><img src="{{ url_for('static', filename=item.path) }}" alt="{{ item.alt }}"><figcaption>{{ item.caption }}</figcaption></figure>{% endfor %}
+      </div>
+      {% endif %}
     </section>
 
     <section id="build" class="academy__section" aria-labelledby="build-title">
@@ -81,11 +87,19 @@
       <h2 id="practice-title">Independent practice</h2><p>{{ lesson.practice }}</p>
     </section>
 
+    <section id="self-check" class="academy__section academy__card" aria-labelledby="self-check-title">
+      <h2 id="self-check-title">Self-check</h2>
+      <p>Answer each question before opening the explanation.</p>
+      <div class="academy__self-check">
+        {% for item in lesson.self_check %}<details><summary>{{ item.question }}</summary><p>{{ item.answer }}</p></details>{% endfor %}
+      </div>
+    </section>
+
     <section id="complete" class="academy__section academy__card" aria-labelledby="complete-title">
       <h2 id="complete-title">Completion checklist</h2>
       <ul class="academy__check-list">{% for item in lesson.completion_checklist %}<li>{{ item }}</li>{% endfor %}</ul>
       {% if lesson.vocabulary %}<h3>Vocabulary</h3><p>{{ lesson.vocabulary|join(' · ') }}</p>{% endif %}
-      {% if lesson.media %}<h3>Media placeholders</h3>{% for item in lesson.media %}<p class="academy__resource-note">{{ item }}</p>{% endfor %}{% endif %}
+      {% set placeholders = lesson.media|select('string')|list %}{% if placeholders %}<h3>Media placeholders</h3>{% for item in placeholders %}<p class="academy__resource-note">{{ item }}</p>{% endfor %}{% endif %}
     </section>
 
     <nav class="academy__lesson-nav" aria-label="Lesson navigation">

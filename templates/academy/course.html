@@ -78,7 +78,9 @@
 
     <section class="academy__section academy__card" aria-labelledby="next-title">
       <h2 id="next-title">Recommended next courses</h2>
-      {% for item in related if item %}<p><strong>{{ item.title }}</strong> <span class="academy__status academy__status--{{ item.status|lower }}">{{ item.status }}</span></p><p>{{ item.summary }}</p>{% endfor %}
+      {% for item in related if item %}
+        <p><strong>{% if item.status == 'Live' %}<a href="{{ url_for('learn_course', platform=platform, course_slug=item.slug) }}">{{ item.title }}</a>{% else %}{{ item.title }}{% endif %}</strong> <span class="academy__status academy__status--{{ item.status|lower }}">{{ item.status }}</span></p><p>{{ item.summary }}</p>
+      {% endfor %}
     </section>
   </div>
 </div>
