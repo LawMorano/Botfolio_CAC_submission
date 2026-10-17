@@ -186,7 +186,7 @@ def build_course(platform, pathway_name):
         "duration_minutes": sum(lesson["estimated_minutes"] for lesson in lessons),
         "status": "Live",
         "outcome": "A parameter-driven, reviewed drivetrain assembly and a portfolio-ready design explanation.",
-        "prerequisites": ("Quick Start and CAD Mental Model", "Sketching and Parameters/Variables", "Basic assembly constraints"),
+        "prerequisites": ("Quick Start and CAD Mental Model", "Sketching and Parameters/Variables", "Parts or Components and FTC Libraries"),
         "skills": ("Parametric layout", "Hardware interfaces", "Motion and clearance review", "Design communication"),
         "tools": (pathway_name, "Chosen FTC wheel, bearing, shaft, motor, and fastener specifications"),
         "lessons": lessons, "brief": ENGINEERING_BRIEF, "objectives": OBJECTIVES,
@@ -194,5 +194,5 @@ def build_course(platform, pathway_name):
         "checkpoints": tuple(checkpoint for lesson in lessons for checkpoint in lesson["checkpoints"][:1]),
         "challenge": CHALLENGE, "artifacts": ARTIFACTS, "rubric": RUBRIC,
         "reference_specifications": REFERENCE_SPECIFICATIONS,
-        "related": ("sketching-and-parameters", "robot-integration-strategy"), "equivalent_slug": COURSE_SLUG,
+        "related": ("parts-components-ftc-libraries", "robot-integration-strategy"), "equivalent_slug": COURSE_SLUG,
     }

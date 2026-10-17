@@ -3,6 +3,7 @@
 import re
 
 from academy.content.parallel_plate import ENGINEERING_BRIEF, OBJECTIVES, RUBRIC, build_course as build_parallel_plate
+from academy.content.parts_libraries import build_course as build_parts_libraries
 from academy.content.quick_start import build_course as build_quick_start
 from academy.content.sketching_parameters import build_course as build_sketching_parameters
 
@@ -16,7 +17,6 @@ PATHWAYS = {
 }
 
 PLANNED = (
-    ("parts-components-ftc-libraries", "Parts or Components and FTC Libraries", "FTC-Ready CAD", "Intermediate", 90, "Organize parts and use verified FTC hardware dimensions.", ("Part organization", "Hardware libraries")),
     ("assemblies-and-motion", "Assemblies and Motion", "FTC-Ready CAD", "Intermediate", 90, "Constrain a mechanism and inspect its motion.", ("Assembly", "Motion checks")),
     ("robot-integration-strategy", "Robot Integration and Strategy", "Robot Integration and Strategy", "Advanced", 120, "Fit a proven drivetrain into a complete robot layout and defend subsystem tradeoffs.", ("Subsystem integration", "Design tradeoffs")),
 )
@@ -38,9 +38,10 @@ CATALOG = {
     platform: (
         build_quick_start(platform, pathway["name"]),
         build_sketching_parameters(platform, pathway["name"]),
-        *(_planned_course(platform, item) for item in PLANNED[:2]),
+        build_parts_libraries(platform, pathway["name"]),
+        _planned_course(platform, PLANNED[0]),
         build_parallel_plate(platform, pathway["name"]),
-        _planned_course(platform, PLANNED[2]),
+        _planned_course(platform, PLANNED[1]),
     )
     for platform, pathway in PATHWAYS.items()
 }

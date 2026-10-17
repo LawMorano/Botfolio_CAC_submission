@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 390" role="img" aria-labelledby="title desc">
+  <title id="title">Detailed versus simplified reference geometry</title><desc id="desc">A treaded wheel with many decorative features is compared with a lightweight wheel preserving diameter, width, bore, and axis.</desc><rect width="760" height="390" rx="24" fill="#f5f7fb"/>
+  <g font-family="Arial,sans-serif" text-anchor="middle" font-weight="700" font-size="24" fill="#183153"><text x="190" y="45">Detailed source</text><text x="570" y="45">Simplified reference</text></g>
+  <g transform="translate(190 195)" fill="none" stroke="#183153"><circle r="105" fill="#dbeafe" stroke-width="5"/><circle r="32" fill="#fff" stroke-width="5"/><g stroke-width="9"> <path d="M-70-78l18 22M-20-102l8 28M35-96l-10 27M78-68L57-48M102-20l-28 7M96 35l-27-10M68 78L48 57M20 102l-8-28M-35 96l10-27M-78 68l21-20M-102 20l28-7M-96-35l27 10"/></g></g>
+  <g transform="translate(570 195)" fill="none"><circle r="105" fill="#dcfce7" stroke="#16784b" stroke-width="5"/><circle r="32" fill="#fff" stroke="#16784b" stroke-width="5"/><path d="M-145 0h290" stroke="#e87836" stroke-width="4" stroke-dasharray="10 8"/></g>
+  <g font-family="Arial,sans-serif" font-size="18" text-anchor="middle"><text x="190" y="340" fill="#9a3412">tread and cosmetic detail add complexity</text><text x="570" y="340" fill="#166534">diameter, bore, width, and axis remain</text></g>
+</svg>

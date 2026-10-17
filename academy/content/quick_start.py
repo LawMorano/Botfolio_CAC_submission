@@ -219,6 +219,6 @@ def build_course(platform, pathway_name):
         "constraints": ("Use a rectangular mounting body and at least two mounting-hole patterns.", "Keep dimensions provisional until checked against selected hardware.", "Preserve symmetry and minimum material around holes during configuration changes."),
         "checkpoints": tuple(checkpoint for lesson in lessons for checkpoint in lesson["checkpoints"][:1]),
         "challenge": CHALLENGE, "artifacts": ARTIFACTS, "rubric": RUBRIC,
-        "related": ("sketching-and-parameters", "parallel-plate-drivetrain"),
+        "related": ("sketching-and-parameters",),
         "equivalent_slug": COURSE_SLUG,
     }
