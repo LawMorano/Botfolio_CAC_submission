@@ -55,15 +55,13 @@ class AcademyTests(unittest.TestCase):
         )
 
     def test_expected_course_statuses_and_invalid_paths(self):
-        planned = {
-            "assemblies-and-motion", "robot-integration-strategy",
-        }
+        planned = {"robot-integration-strategy"}
         for platform in PATHWAYS:
             with self.subTest(platform=platform):
                 response = self.client.get(f"/learn/{platform}")
                 self.assertEqual(response.status_code, 200)
                 html = response.get_data(as_text=True)
-                for slug in ("quick-start-cad-mental-model", "sketching-and-parameters", "parts-components-ftc-libraries", "parallel-plate-drivetrain"):
+                for slug in ("quick-start-cad-mental-model", "sketching-and-parameters", "parts-components-ftc-libraries", "assemblies-and-motion", "parallel-plate-drivetrain"):
                     self.assertEqual(get_course(platform, slug)["status"], "Live")
                     self.assertIn(f'href="/learn/{platform}/{slug}"', html)
                     self.assertEqual(self.client.get(f"/learn/{platform}/{slug}").status_code, 200)
@@ -121,7 +119,7 @@ class AcademyTests(unittest.TestCase):
         }
         for platform, courses in CATALOG.items():
             other = PATHWAYS[platform]["other"]
-            own_term, switch_label, foreign_term = terms[platform]
+            _own_term, switch_label, foreign_term = terms[platform]
             for course in (item for item in courses if item["status"] == "Live"):
                 other_course = get_course(other, course["equivalent_slug"])
                 self.assertEqual(course["outcome"], other_course["outcome"])
@@ -143,7 +141,6 @@ class AcademyTests(unittest.TestCase):
                          if key not in {"title", "summary"}})
                     for lesson in course["lessons"]
                 )
-                self.assertIn(own_term, combined)
                 self.assertNotIn(foreign_term, combined)
 
     def test_sketching_course_alignment_depth_and_self_checks(self):
@@ -184,6 +181,7 @@ class AcademyTests(unittest.TestCase):
             quick = get_course(platform, "quick-start-cad-mental-model")
             sketching = get_course(platform, "sketching-and-parameters")
             parts = get_course(platform, "parts-components-ftc-libraries")
+            assemblies = get_course(platform, "assemblies-and-motion")
             drivetrain = get_course(platform, "parallel-plate-drivetrain")
             self.assertIn("sketching-and-parameters", quick["related"])
             self.assertEqual(
@@ -193,12 +191,15 @@ class AcademyTests(unittest.TestCase):
             self.assertIn("Quick Start and CAD Mental Model", drivetrain["prerequisites"])
             self.assertIn("Sketching and Parameters/Variables", drivetrain["prerequisites"])
             self.assertIn("Parts or Components and FTC Libraries", drivetrain["prerequisites"])
+            self.assertIn("Assemblies and Motion", drivetrain["prerequisites"])
             quick_html = self.client.get(f"/learn/{platform}/{quick['slug']}").get_data(as_text=True)
             self.assertIn(f'href="/learn/{platform}/sketching-and-parameters"', quick_html)
             sketch_html = self.client.get(f"/learn/{platform}/{sketching['slug']}").get_data(as_text=True)
             self.assertIn(f'href="/learn/{platform}/parts-components-ftc-libraries"', sketch_html)
             parts_html = self.client.get(f"/learn/{platform}/{parts['slug']}").get_data(as_text=True)
-            self.assertNotIn(f'href="/learn/{platform}/assemblies-and-motion"', parts_html)
+            self.assertIn(f'href="/learn/{platform}/assemblies-and-motion"', parts_html)
+            assemblies_html = self.client.get(f"/learn/{platform}/{assemblies['slug']}").get_data(as_text=True)
+            self.assertIn(f'href="/learn/{platform}/parallel-plate-drivetrain"', assemblies_html)
             lesson_html = self.client.get(
                 f"/learn/{platform}/sketching-and-parameters/lessons/dimensions-fully-defined"
             ).get_data(as_text=True)
@@ -258,6 +259,67 @@ class AcademyTests(unittest.TestCase):
         self.assertTrue(all(item["alt"].strip() for lesson in editions[0]["lessons"]
                             for item in lesson["media"] if isinstance(item, dict)))
 
+    def test_assemblies_motion_alignment_terminology_and_assets(self):
+        editions = [get_course(platform, "assemblies-and-motion") for platform in PATHWAYS]
+        expected_ids = (
+            "plan-degrees-of-freedom", "insert-organize-components",
+            "constrain-fixed-structure", "create-rotational-motion",
+            "spacers-retention-motor", "inspect-motion-service",
+            "diagnose-repair-assembly",
+        )
+        expected_assets = {
+            "assembly-degrees-of-freedom.svg", "fixed-vs-revolute.svg",
+            "live-vs-dead-axle.svg", "origin-joint-alignment.svg",
+            "wheel-stack-retention.svg", "interference-vs-service.svg",
+            "assembly-hierarchy.svg",
+        }
+        terminology = {
+            "onshape": (("Fastened mate", "Mate connectors", "Revolute mates"),
+                        ("Rigid joints", "Joint origins")),
+            "fusion-360": (("Rigid joints", "Joint origins", "Revolute joints"),
+                           ("Fastened mates", "Mate connectors")),
+        }
+        for course in editions:
+            self.assertEqual(course["status"], "Live")
+            self.assertGreaterEqual(course["duration_minutes"], 120)
+            self.assertLessEqual(course["duration_minutes"], 150)
+            self.assertEqual(tuple(lesson["id"] for lesson in course["lessons"]), expected_ids)
+            combined = " ".join(str(lesson) for lesson in course["lessons"])
+            for term in terminology[course["platform"]][0]:
+                self.assertIn(term, combined)
+            for term in terminology[course["platform"]][1]:
+                self.assertNotIn(term, combined)
+            self.assertIn("live axle", combined.casefold())
+            self.assertIn("dead axle", combined.casefold())
+            for lesson in course["lessons"]:
+                self.assertGreaterEqual(len(lesson["steps"]), 5)
+                self.assertGreaterEqual(len(lesson["checkpoints"]), 2)
+                self.assertTrue(lesson["common_mistakes"])
+                self.assertTrue(lesson["practice"])
+                self.assertTrue(lesson["completion_checklist"])
+                self.assertTrue(lesson["self_check"])
+                response = self.client.get(
+                    f"/learn/{course['platform']}/{course['slug']}/lessons/{lesson['id']}"
+                )
+                self.assertEqual(response.status_code, 200)
+                html = response.get_data(as_text=True)
+                other = PATHWAYS[course["platform"]]["other"]
+                self.assertIn(f'/learn/{other}/{course["slug"]}/lessons/{lesson["id"]}', html)
+                self.assertIn("Self-check", html)
+        self.assertEqual(editions[0]["outcome"], editions[1]["outcome"])
+        self.assertEqual(editions[0]["challenge"], editions[1]["challenge"])
+        self.assertEqual(
+            tuple(lesson["outcome"] for lesson in editions[0]["lessons"]),
+            tuple(lesson["outcome"] for lesson in editions[1]["lessons"]),
+        )
+        all_media = {Path(item["path"]).name for lesson in editions[0]["lessons"]
+                     for item in lesson["media"] if isinstance(item, dict)}
+        self.assertTrue(expected_assets.issubset(all_media))
+        for name in expected_assets:
+            self.assertTrue((Path(__file__).resolve().parents[1] / "static" / "images" / "academy" / name).is_file())
+        self.assertTrue(all(item["alt"].strip() for lesson in editions[0]["lessons"]
+                            for item in lesson["media"] if isinstance(item, dict)))
+
     def test_quick_start_scope_and_drivetrain_depth(self):
         for platform in PATHWAYS:
             quick = get_course(platform, "quick-start-cad-mental-model")
@@ -282,8 +344,9 @@ class AcademyTests(unittest.TestCase):
         self.assertIn("/learn/onshape/quick-start-cad-mental-model", sitemap)
         self.assertIn("/learn/onshape/sketching-and-parameters", sitemap)
         self.assertIn("/learn/onshape/parts-components-ftc-libraries", sitemap)
+        self.assertIn("/learn/onshape/assemblies-and-motion", sitemap)
         self.assertIn("/learn/onshape/parallel-plate-drivetrain", sitemap)
-        self.assertNotIn("/learn/onshape/assemblies-and-motion", sitemap)
+        self.assertNotIn("/learn/onshape/robot-integration-strategy", sitemap)
         self.assertNotIn("/lessons/", sitemap)
 
         search = self.client.get("/search?q=sketching").get_data(as_text=True)
@@ -293,6 +356,10 @@ class AcademyTests(unittest.TestCase):
         parts_search = self.client.get("/search?q=COTS").get_data(as_text=True)
         self.assertIn("Parts or Components and FTC Libraries", parts_search)
         self.assertIn("/learn/onshape/parts-components-ftc-libraries", parts_search)
+
+        assemblies_search = self.client.get("/search?q=motion").get_data(as_text=True)
+        self.assertIn("Assemblies and Motion", assemblies_search)
+        self.assertIn("/learn/onshape/assemblies-and-motion", assemblies_search)
 
     def test_validation_rejects_incomplete_course_lesson_and_step_data(self):
         def copy_catalog():
@@ -324,6 +391,11 @@ class AcademyTests(unittest.TestCase):
             lambda data: data["fusion-360"][2].update(lessons=(
                 {**data["fusion-360"][2]["lessons"][0], "id": "misaligned"},
                 *data["fusion-360"][2]["lessons"][1:],
+            )),
+            lambda data: data["onshape"][3]["lessons"][0].update(steps=()),
+            lambda data: data["fusion-360"][3].update(lessons=(
+                {**data["fusion-360"][3]["lessons"][0], "id": "misaligned-assembly"},
+                *data["fusion-360"][3]["lessons"][1:],
             )),
             lambda data: data["fusion-360"][0].update(equivalent_slug="missing"),
             lambda data: data["fusion-360"][0].update(lessons=(
