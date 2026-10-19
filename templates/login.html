@@ -33,6 +33,27 @@
 {% endblock %}
 
 {% block auth_footer %}
-  <p class="sub"><a href="{{ url_for('forgot_password') }}">Forgot your password?</a></p>
+  <p class="sub"><a href="{{ url_for('forgot_password') }}"{% if cac_demo %} data-demo-reset-link{% endif %}>Forgot your password?</a></p>
   <p class="sub">No account? <a href="{{ url_for('register', next=request.args.get('next')) }}">Create one</a>.</p>
+  {% if cac_demo %}
+    <dialog class="demo-reset-dialog" id="demo-reset-dialog" aria-labelledby="demo-reset-title" aria-describedby="demo-reset-message">
+      <h2 id="demo-reset-title">Demo feature unavailable</h2>
+      <p id="demo-reset-message">Password reset by email does not work in this demo. No email was sent.</p>
+      <form method="dialog"><button class="btn btn--primary" type="submit">OK</button></form>
+    </dialog>
+  {% endif %}
+{% endblock %}
+
+{% block scripts %}
+  {% if cac_demo %}
+    <script>
+      const demoResetLink = document.querySelector('[data-demo-reset-link]');
+      const demoResetDialog = document.getElementById('demo-reset-dialog');
+      demoResetLink?.addEventListener('click', (event) => {
+        if (typeof demoResetDialog?.showModal !== 'function') return;
+        event.preventDefault();
+        demoResetDialog.showModal();
+      });
+    </script>
+  {% endif %}
 {% endblock %}

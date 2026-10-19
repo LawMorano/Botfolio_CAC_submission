@@ -56,6 +56,9 @@ class CacDemoAuthTests(unittest.TestCase):
             conn.close()
 
     def test_reset_notice_creates_no_token_or_email(self):
+        login = self.client.get("/login")
+        self.assertIn(b'data-demo-reset-link', login.data)
+        self.assertIn(b'id="demo-reset-dialog"', login.data)
         token = self.csrf("/forgot-password")
         with patch.object(self.application.email_service, "send_email") as send:
             response = self.client.post("/forgot-password", data={
