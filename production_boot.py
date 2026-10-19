@@ -63,6 +63,13 @@ def _own_volume(data_dir, uid, gid):
 
 
 def main():
+    from infra.cac_isolation import validate
+
+    validate()
+    if os.environ.get("CAC_ISOLATED_DEPLOYMENT") == "true":
+        from tools.init_cac_schema import main as init_cac_schema
+
+        init_cac_schema()
     data_dir = os.environ.get("BOTFOLIO_DATA_DIR")
     if data_dir:
         import pwd

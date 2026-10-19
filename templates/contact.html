@@ -16,6 +16,9 @@
   </div>
 
   <h2>Send us a message</h2>
+  {% if cac_demo %}
+  <p class="sub">The contact form is unavailable in this demo. No email is sent.</p>
+  {% else %}
   <p class="sub">Complete the fields below and Botfolio will route your message to the right team.</p>
   <form method="post" class="contact-form panel">
     <label>Your email<input name="email" type="email" value="{{ request.form.get('email', '') }}" autocomplete="email" maxlength="254" placeholder="you@example.com" required></label>
@@ -25,6 +28,7 @@
     <label class="contact-form__website" aria-hidden="true">Website<input name="website" tabindex="-1" autocomplete="off"></label>
     <div class="contact-form__footer"><span class="sub">Please do not include sensitive personal information.</span><button class="btn btn--primary btn--lg" type="submit">Send message</button></div>
   </form>
+  {% endif %}
 
   <div class="discord-card">
     <div><h2>Join the Botfolio community</h2><p class="sub">Connect with robotics builders, share ideas, ask questions, and follow Botfolio updates.</p></div>

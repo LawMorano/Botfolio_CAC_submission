@@ -1,5 +1,7 @@
 -- Botfolio database schema
--- Applied by db.init_db(), which is called from seed.py.
+-- db.init_db() recreates this schema and destroys existing data.
+-- The CAC deployment uses tools/init_cac_schema.py, which removes the DROP
+-- statements and runs only against an empty dedicated PostgreSQL database.
 
 PRAGMA foreign_keys = ON;
 

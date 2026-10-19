@@ -161,6 +161,9 @@ code {
 .auth__form-inner .stack { margin-top: 1.4rem; }
 .auth__form-inner .stack + .sub { margin-top: 1.2rem; }
 .auth__form-inner .eyebrow { margin-bottom: .4rem; }
+.demo-notice { margin-top: 1.5rem; padding: 1.5rem; border: 1px solid var(--border); border-radius: 1rem; background: var(--bg-raised); box-shadow: 0 1rem 3rem rgba(0, 0, 0, .18); }
+.demo-notice h2 { margin-top: 0; }
+.demo-notice .btn { margin-top: .75rem; }
 /* A labelled rule, so the two ways in read as alternatives rather than as a
    stack of buttons where the lower one looks like the fallback. */
 .auth__or {

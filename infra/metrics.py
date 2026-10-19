@@ -16,6 +16,7 @@ time-series database, and for a project this size the extra moving part costs
 more than it returns.
 """
 
+import os
 import threading
 import time
 from collections import Counter, deque
@@ -169,8 +170,13 @@ def readyz():
         from infra import storage
 
         checks["storage"] = storage.health()
+        if (os.environ.get("CAC_ISOLATED_DEPLOYMENT") == "true"
+                and not checks["storage"].startswith("s3://")):
+            ok = False
     except Exception as exc:
         checks["storage"] = f"error: {type(exc).__name__}"
+        if os.environ.get("CAC_ISOLATED_DEPLOYMENT") == "true":
+            ok = False
         # Uploads being unavailable degrades the site but does not break
         # browsing, so it is reported without failing the whole check.
 

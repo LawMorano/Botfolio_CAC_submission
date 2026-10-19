@@ -12,7 +12,7 @@
   <h2>Profile and security</h2>
   <p><a class="btn btn--quiet" href="{{ url_for('edit_profile', username=current_user['username']) }}">Edit profile</a></p>
   <div class="account-setting">
-    <div><h3>Email address</h3><p class="sub">Currently {{ current_user['email'] }}{% if not current_user['email_verified_at'] %} &middot; Verification required{% endif %}</p></div>
+    <div><h3>Email address</h3><p class="sub">Currently {{ current_user['email'] }}{% if not cac_demo and not current_user['email_verified_at'] %} &middot; Verification required{% endif %}</p></div>
     {% if google_only %}
       <div class="stack">
         <p class="note">Changing your email address needs your Botfolio password, and this account signs in with Google instead. Set a password below and you can change it here.</p>
@@ -21,7 +21,7 @@
       <form method="post" action="{{ url_for('change_email') }}" class="stack account-email-form">
         <label>New email address<input name="email" type="email" maxlength="254" autocomplete="email" required></label>
         <label>Current password<input name="password" type="password" autocomplete="current-password" required></label>
-        <p class="note">Changing your email signs future messages over to the new address. You must verify it before uploading or commenting.</p>
+        {% if not cac_demo %}<p class="note">Changing your email signs future messages over to the new address. You must verify it before uploading or commenting.</p>{% endif %}
         <button class="btn btn--primary" type="submit">Change email</button>
       </form>
     {% endif %}
@@ -32,10 +32,10 @@
       <form method="post" action="{{ url_for('forgot_password') }}" class="stack">
         <input type="hidden" name="email" value="{{ current_user['email'] }}">
         <p class="note">A password is optional, but it lets you change your email address, delete your account, and sign in if Google is ever unavailable.</p>
-        <button class="btn btn--quiet" type="submit">Email me a link to set a password</button>
+        <button class="btn btn--quiet" type="submit">Set a password</button>
       </form>
     {% else %}
-      <div><h3>Password</h3><p class="sub">Use a secure email link to choose a new password.</p></div>
+      <div><h3>Password</h3><p class="sub">{% if cac_demo %}Password reset is unavailable in this demo.{% else %}Use a secure email link to choose a new password.{% endif %}</p></div>
       <p><a class="btn btn--quiet" href="{{ url_for('forgot_password') }}">Change password</a></p>
     {% endif %}
   </div>

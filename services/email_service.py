@@ -63,6 +63,8 @@ def _runtime_config():
 
 def is_configured():
     """Return True when the required EmailJS settings are available."""
+    if os.environ.get("CAC_ISOLATED_DEPLOYMENT") == "true":
+        return False
     config = _runtime_config()
     return bool(
         config["service_id"]
@@ -85,7 +87,7 @@ def send_email(
     team_name="",
     reply_to="",
     footer="",
-    website_url="https://botfoliohq.com",
+    website_url=None,
     greeting="",
     intro="",
     purpose="",
@@ -99,6 +101,8 @@ def send_email(
     Email failures are treated as non-fatal so an email problem does not undo
     account creation, password-reset token creation, or team membership changes.
     """
+    if os.environ.get("CAC_ISOLATED_DEPLOYMENT") == "true":
+        return False
     config = _runtime_config()
     if not (
         config["service_id"]
@@ -132,7 +136,7 @@ def send_email(
         "team_number": str(team_number) if team_number else "",
         "team_name": team_name,
         "footer": footer,
-        "website_url": website_url,
+        "website_url": website_url or os.environ.get("SITE_URL", "https://botfoliohq.com"),
         "greeting": greeting,
         "intro": intro,
         "purpose": purpose,
@@ -169,34 +173,22 @@ def send_email(
 
     try:
         with urllib.request.urlopen(request, timeout=15) as response:
-            response_body = response.read().decode(
-                "utf-8",
-                errors="replace",
-            )
-
             logging.info(
-                "EmailJS accepted email for %s. Status: %s. Response: %s",
+                "EmailJS accepted email for %s. Status: %s",
                 to_email,
                 response.status,
-                response_body,
             )
 
             return 200 <= response.status < 300
 
     except urllib.error.HTTPError as error:
-        error_body = error.read().decode(
-            "utf-8",
-            errors="replace",
-        )
-
         logging.error(
             "EmailJS rejected email for %s. "
-            "Status: %s. Reason: %s. Private key loaded: %s. Response: %s",
+            "Status: %s. Reason: %s. Private key loaded: %s",
             to_email,
             error.code,
             error.reason,
             bool(config["private_key"]),
-            error_body,
         )
 
         return False

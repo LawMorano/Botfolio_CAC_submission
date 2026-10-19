@@ -1205,6 +1205,8 @@ def login_required(view=None, *, message="Please log in first."):
 def verified_required(view):
     @wraps(view)
     def wrapped(*args, **kwargs):
+        if os.environ.get("CAC_ISOLATED_DEPLOYMENT") == "true":
+            return view(*args, **kwargs)
         if not current_user()["email_verified_at"]:
             flash("Verify your email address before uploading or commenting.", "error")
             return redirect(url_for("resend_verification"))
@@ -1330,6 +1332,7 @@ def inject_globals():
         # The flag only -- never the client id or secret. A template that knows
         # whether the button should exist knows everything it needs to.
         "google_oauth_enabled": settings.google_oauth_enabled,
+        "cac_demo": os.environ.get("CAC_ISOLATED_DEPLOYMENT") == "true",
         "csrf_token": csrf_token,
         "max_tags": MAX_TAGS_PER_DESIGN,
         "view_count_start_label": VIEW_COUNT_START_LABEL,
@@ -2240,6 +2243,9 @@ def contact():
         "partnership": "Partnership or sponsorship",
         "other": "Other",
     }
+    if request.method == "POST" and os.environ.get("CAC_ISOLATED_DEPLOYMENT") == "true":
+        flash("The contact form is unavailable in this demo. No message was sent.", "error")
+        return redirect(url_for("contact"))
     if request.method == "POST":
         sender_email = (request.form.get("email") or "").strip()[:254]
         subject = (request.form.get("subject") or "").strip()[:120]
@@ -3365,7 +3371,7 @@ def account_state(row):
         return "banned"
     if row["suspended_at"]:
         return "suspended"
-    if not row["email_verified_at"]:
+    if os.environ.get("CAC_ISOLATED_DEPLOYMENT") != "true" and not row["email_verified_at"]:
         return "email never verified"
     if not row["onboarding_complete"]:
         return "onboarding unfinished"
@@ -4127,7 +4133,7 @@ def send_verification_email(user_id, email, username):
             "Please verify your email address before uploading designs, "
             "commenting, or participating in the community.\n\n"
             "If you didn't create a Botfolio account, you can ignore this email.\n\n"
-            "Thanks,\nBotfolio\n\nbotfoliohq.com"
+            f"Thanks,\nBotfolio\n\n{os.environ.get('SITE_URL', 'https://botfoliohq.com')}"
         ),
         action_url=url_for("verify_email", token=raw_token, _external=True),
         action_text="Verify Email", event_type="email_verification",

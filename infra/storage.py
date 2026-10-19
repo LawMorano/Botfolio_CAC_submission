@@ -18,6 +18,7 @@ matching the two directories that already exist.
 import io
 import logging
 import mimetypes
+import os
 import threading
 
 from flask import redirect, send_from_directory, url_for
@@ -63,8 +64,10 @@ def _client():
             # could put in an environment variable; on Railway it falls back to
             # AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY from the environment.
             _s3 = boto3.client("s3", **kwargs)
-            log.info("uploads backed by s3://%s", settings.s3_bucket)
+            log.info("uploads backed by dedicated object storage")
         except Exception as exc:
+            if os.environ.get("CAC_ISOLATED_DEPLOYMENT") == "true":
+                raise RuntimeError("CAC object storage client failed") from exc
             # Falling back to disk keeps the site serving. It will lose files on
             # the next deploy, so this is loud.
             log.error(

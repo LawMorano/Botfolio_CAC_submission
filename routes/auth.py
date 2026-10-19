@@ -1,10 +1,11 @@
 """Account registration, sign-in, onboarding, and account settings."""
 
 import hashlib
+import os
 import re
 import secrets
 
-from flask import Blueprint, flash, redirect, render_template, request, session, url_for
+from flask import Blueprint, abort, flash, redirect, render_template, request, session, url_for
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from app import (
@@ -22,8 +23,14 @@ from app import (
 auth_bp = Blueprint("auth", __name__)
 
 
+def cac_demo():
+    return os.environ.get("CAC_ISOLATED_DEPLOYMENT") == "true"
+
+
 @auth_bp.route("/verify-email/<token>")
 def verify_email(token):
+    if cac_demo():
+        abort(404)
     token_hash = hashlib.sha256(token.encode()).hexdigest()
     conn = db.get_db()
     row = conn.execute("SELECT * FROM email_verification_tokens WHERE token_hash=? AND used_at IS NULL AND expires_at>datetime('now')", (token_hash,)).fetchone()
@@ -40,6 +47,8 @@ def verify_email(token):
 @ratelimit.limit("resend-verification", 3, 3600)
 @login_required
 def resend_verification():
+    if cac_demo():
+        abort(404)
     user = current_user()
     if user["email_verified_at"]:
         return redirect(url_for("index"))
@@ -126,15 +135,18 @@ def register():
                     return render_template("register.html")
                 record_security_event("account_registered", cur.lastrowid)
                 start_authenticated_session(cur.lastrowid)
-                sent = send_verification_email(cur.lastrowid, email, username)
-                if sent:
+                if cac_demo():
                     flash(f"Welcome, {username}!", "success")
                 else:
-                    flash(
-                        "Your account was created, but the verification email "
-                        "could not be sent. You can retry it from your profile.",
-                        "error",
-                    )
+                    sent = send_verification_email(cur.lastrowid, email, username)
+                    if sent:
+                        flash(f"Welcome, {username}!", "success")
+                    else:
+                        flash(
+                            "Your account was created, but the verification email "
+                            "could not be sent. You can retry it from your profile.",
+                            "error",
+                        )
                 # Most people who register mid-click were sent here by something
                 # that needed an account — a download, usually. Onboarding is
                 # three screens long, so remember where they were headed and
@@ -407,6 +419,8 @@ def legal_updates():
 # it. The limit is what stops that being a free mailing service.
 @ratelimit.limit("forgot-password", 5, 3600)
 def forgot_password():
+    if cac_demo():
+        return render_template("forgot_password_demo.html")
     if request.method == "POST":
         # Honeypot: a decoy field hidden from real people. A bot that fills every
         # input trips it. Fall through to the same generic response below without
@@ -469,6 +483,8 @@ def forgot_password():
 
 @auth_bp.route("/reset-password/<token>", methods=["GET", "POST"])
 def reset_password(token):
+    if cac_demo():
+        abort(404)
     token_hash = hashlib.sha256(token.encode("utf-8")).hexdigest()
     conn = db.get_db()
     reset = conn.execute(
@@ -589,15 +605,21 @@ def change_email():
         flash("That email address is already registered.", "error")
         return redirect(url_for("account_settings"))
 
-    conn.execute(
-        "UPDATE users SET email=?,email_verified_at=NULL WHERE id=?",
-        (new_email, user["id"]),
-    )
+    if cac_demo():
+        conn.execute("UPDATE users SET email=? WHERE id=?", (new_email, user["id"]))
+    else:
+        conn.execute(
+            "UPDATE users SET email=?,email_verified_at=NULL WHERE id=?",
+            (new_email, user["id"]),
+        )
     conn.execute(
         "UPDATE email_verification_tokens SET used_at=datetime('now') WHERE user_id=? AND used_at IS NULL",
         (user["id"],),
     )
     conn.commit()
+    if cac_demo():
+        flash("Email address changed for this demo account.", "success")
+        return redirect(url_for("account_settings"))
     sent = send_verification_email(user["id"], new_email, user["username"])
     if sent:
         flash("Email changed. Check your new inbox to verify the address.", "success")
