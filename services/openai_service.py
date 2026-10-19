@@ -58,13 +58,18 @@ def contains_inappropriate_language(text):
 
 
 def moderate_public_content(*, texts=(), image_bytes=(), use_api=True):
-    """Reject unsafe public text/images, failing closed when API checks fail."""
+    """Apply local screening; hosted moderation is optional in the CAC demo."""
     parts = [str(value).strip() for value in texts if value is not None and str(value).strip()]
     text = "\n".join(parts)[:12000]
     if contains_inappropriate_language(text):
         raise ModerationRejected(
             "That content contains language that is not allowed on Botfolio."
         )
+
+    if os.environ.get("CAC_ISOLATED_DEPLOYMENT") == "true":
+        # CAC has no main-site API key. Keep its local language guard while
+        # allowing demo registration and uploads without an external account.
+        use_api = False
 
     images = list(image_bytes)
     if not use_api or (not text and not images):

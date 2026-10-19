@@ -81,6 +81,15 @@ class CacDemoAuthTests(unittest.TestCase):
         self.assertFalse(sent)
         request.assert_not_called()
 
+    def test_cac_uses_local_moderation_without_main_api_key(self):
+        from services import openai_service
+
+        with patch.object(openai_service, "_client") as client:
+            openai_service.moderate_public_content(texts=["demo robot"], use_api=True)
+        client.assert_not_called()
+        with self.assertRaises(openai_service.ModerationRejected):
+            openai_service.moderate_public_content(texts=["fuck"], use_api=True)
+
 
 if __name__ == "__main__":
     unittest.main()

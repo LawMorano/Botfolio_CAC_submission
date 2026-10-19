@@ -58,6 +58,8 @@ verification, and email-based password resets. The password-reset link displays
 a demo notice without issuing a token or sending mail. Remove the pre-existing
 Gemini variable until it has a dedicated CAC credential. Leave Google OAuth disabled until a separate CAC client registers exactly
 `https://botfoliosimple-production.up.railway.app/auth/google/callback`.
+CAC keeps local language screening, but external text and image moderation is
+disabled without a dedicated CAC API key. Review demo uploads manually.
 
 `production_boot.py` validates this boundary before starting. On the first
 boot it initializes the **empty** CAC PostgreSQL database from `schema.sql`
