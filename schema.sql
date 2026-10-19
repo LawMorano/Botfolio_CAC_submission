@@ -4,6 +4,7 @@
 PRAGMA foreign_keys = ON;
 
 DROP TABLE IF EXISTS schema_migrations;
+DROP TABLE IF EXISTS academy_lesson_progress;
 DROP TABLE IF EXISTS pending_model_uploads;
 DROP TABLE IF EXISTS security_incidents;
 DROP TABLE IF EXISTS upload_attempts;
@@ -104,6 +105,17 @@ CREATE TABLE users (
 -- NULLs are distinct in a unique index on both SQLite and Postgres, so every
 -- password-only account coexists here.
 CREATE UNIQUE INDEX idx_users_google_sub ON users(google_sub);
+
+CREATE TABLE academy_lesson_progress (
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    platform TEXT NOT NULL,
+    course_slug TEXT NOT NULL,
+    lesson_id TEXT NOT NULL,
+    completed_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+    PRIMARY KEY (user_id, platform, course_slug, lesson_id)
+);
+CREATE INDEX idx_academy_progress_recent ON academy_lesson_progress(user_id, completed_at DESC);
 
 CREATE TABLE schema_migrations (
     version    INTEGER PRIMARY KEY,

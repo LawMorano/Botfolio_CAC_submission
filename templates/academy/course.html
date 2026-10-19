@@ -18,6 +18,15 @@
     <div><dt>Skills</dt><dd>{{ course.skills|join(', ') }}</dd></div>
   </dl>
 </header>
+{% if progress %}
+<section class="academy__section academy__card" aria-label="Course progress">
+  <h2>Your progress</h2>
+  <p>{{ progress.completed }} of {{ progress.total }} lessons complete · {{ progress.percentage }}%</p>
+  <progress max="{{ progress.total or 1 }}" value="{{ progress.completed }}" aria-label="{{ course.title }} progress"></progress>
+  {% if progress.first_incomplete %}<p><a class="btn btn--primary" href="{{ url_for('learn_lesson', platform=platform, course_slug=course.slug, lesson_id=progress.first_incomplete.id) }}">{{ progress.action }}</a></p>
+  {% elif progress.complete %}<p><a class="btn btn--primary" href="#lessons-title">Review course</a></p>{% endif %}
+</section>
+{% else %}<p><a href="{{ url_for('login', next=request.path) }}">Sign in to save your progress</a></p>{% endif %}
 
 <nav class="academy__edition" aria-label="Course edition">
   <strong>Choose a platform edition</strong>
@@ -58,6 +67,7 @@
           <div>
             <p class="eyebrow">Lesson {{ loop.index }} of {{ course.lessons|length }} · {{ lesson.estimated_minutes }} min</p>
             <h3>{{ lesson.title }}</h3>
+            {% if completed_lessons is not none %}<p>{% if (platform, course.slug, lesson.id) in completed_lessons %}✓ Complete{% else %}○ Not complete{% endif %}</p>{% endif %}
             <p>{{ lesson.summary }}</p>
             <p class="academy__concepts"><strong>Concepts:</strong> {{ lesson.concepts|join(', ') }}</p>
             <a class="btn btn--primary" href="{{ url_for('learn_lesson', platform=platform, course_slug=course.slug, lesson_id=lesson.id) }}">Start lesson</a>

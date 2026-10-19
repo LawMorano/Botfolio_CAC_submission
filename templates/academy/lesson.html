@@ -15,6 +15,21 @@
   </dl>
 </header>
 
+<section class="academy__section academy__card" aria-label="Lesson progress">
+  {% if current_user %}
+    <p><strong>{% if is_complete %}✓ Lesson complete{% else %}○ Lesson incomplete{% endif %}</strong></p>
+    <form method="post" action="{{ url_for('learn_completion', platform=platform, course_slug=course.slug, lesson_id=lesson.id) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="action" value="{{ 'incomplete' if is_complete else 'complete' }}">
+      <button class="btn btn--primary" type="submit">{{ 'Mark incomplete' if is_complete else 'Mark lesson complete' }}</button>
+    </form>
+    {% if is_complete and next_lesson %}<p><a href="{{ url_for('learn_lesson', platform=platform, course_slug=course.slug, lesson_id=next_lesson.id) }}">Continue to next lesson: {{ next_lesson.title }} →</a></p>{% endif %}
+    {% if is_complete and not next_lesson %}<p><a href="{{ url_for('learn_course', platform=platform, course_slug=course.slug) }}">Review completed course overview →</a></p>{% endif %}
+  {% else %}
+    <p><a href="{{ url_for('login', next=request.path) }}">Sign in to save your progress</a></p>
+  {% endif %}
+</section>
+
 <nav class="academy__edition" aria-label="Lesson edition">
   <strong>Choose a platform edition</strong>
   <a href="{{ url_for('learn_lesson', platform=platform, course_slug=course.slug, lesson_id=lesson.id) }}" aria-current="page">{{ pathway.name }} · Current edition</a>

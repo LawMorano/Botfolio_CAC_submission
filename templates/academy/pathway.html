@@ -12,6 +12,15 @@
   <p>Follow the ordered foundations, then apply them in shared FTC mechanism courses.</p>
   <p><a href="{{ url_for('learn_pathway', platform=pathway.other) }}">Explore the {{ other.name }} pathway</a> — your transferable CAD skills carry over.</p>
 </header>
+{% if progress %}
+<section class="academy__section academy__card" aria-label="Pathway progress">
+  <h2>Your pathway progress</h2>
+  <p>{{ progress.completed }} of {{ progress.total }} lessons complete · {{ progress.percentage }}%</p>
+  <progress max="{{ progress.total or 1 }}" value="{{ progress.completed }}" aria-label="{{ pathway.name }} pathway progress"></progress>
+  {% if progress.resume %}<p><a class="btn btn--primary" href="{{ url_for('learn_lesson', platform=platform, course_slug=progress.resume.course.slug, lesson_id=progress.resume.first_incomplete.id) }}">Resume {{ progress.resume.course.title }}</a></p>{% endif %}
+  <ul>{% for item in progress.courses %}<li><a href="{{ url_for('learn_course', platform=platform, course_slug=item.course.slug) }}">{{ item.course.title }}</a>: {{ item.completed }} of {{ item.total }} lessons complete{% if item.complete %} ✓ Course complete{% endif %}</li>{% endfor %}</ul>
+</section>
+{% else %}<p><a href="{{ url_for('login', next=request.path) }}">Sign in to save your progress</a></p>{% endif %}
 
 <section class="academy__section" aria-labelledby="roadmap-title">
   <div class="section-head"><h2 id="roadmap-title">{{ pathway.name }} roadmap</h2></div>

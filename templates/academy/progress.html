@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}My Learning — CAD Academy — Botfolio{% endblock %}
+{% block page_class %}academy{% endblock %}
+{% block content %}
+<nav class="academy__crumbs" aria-label="Breadcrumb"><a href="{{ url_for('learn') }}">CAD Academy</a><span aria-hidden="true">/</span><span aria-current="page">My Learning</span></nav>
+<header class="academy__hero"><h1>My Learning</h1><p>{{ data.completed }} of {{ data.total }} lessons complete · {{ data.percentage }}% across CAD Academy</p><progress max="{{ data.total or 1 }}" value="{{ data.completed }}" aria-label="Overall academy progress"></progress></header>
+{% if not data.completed %}<p>Start with any live course. Your completed lessons will appear here.</p>{% endif %}
+{% for platform, item in data.pathways.items() %}
+<section class="academy__section" aria-labelledby="path-{{ platform }}">
+  <h2 id="path-{{ platform }}"><a href="{{ url_for('learn_pathway', platform=platform) }}">{{ pathways[platform].name }} pathway</a></h2>
+  <p>{{ item.completed }} of {{ item.total }} lessons complete · {{ item.percentage }}%</p>
+  <progress max="{{ item.total or 1 }}" value="{{ item.completed }}" aria-label="{{ pathways[platform].name }} pathway progress"></progress>
+  <ul>{% for course in item.courses %}<li><a href="{{ url_for('learn_course', platform=platform, course_slug=course.course.slug) }}">{{ course.course.title }}</a> — {{ course.completed }} of {{ course.total }} lessons complete. {% if course.first_incomplete %}<a href="{{ url_for('learn_lesson', platform=platform, course_slug=course.course.slug, lesson_id=course.first_incomplete.id) }}">{{ course.action }}</a>{% elif course.complete %}<a href="{{ url_for('learn_course', platform=platform, course_slug=course.course.slug) }}">Review course</a>{% endif %}</li>{% endfor %}</ul>
+</section>
+{% endfor %}
+{% if data.recent %}<section class="academy__section" aria-labelledby="recent-title"><h2 id="recent-title">Recently completed lessons</h2><ul>{% for item in data.recent %}<li><a href="{{ url_for('learn_lesson', platform=item.platform, course_slug=item.course.slug, lesson_id=item.lesson.id) }}">{{ item.lesson.title }}</a> · {{ pathways[item.platform].name }} · {{ item.completed_at }}</li>{% endfor %}</ul></section>{% endif %}
+{% endblock %}

@@ -548,6 +548,18 @@ def _ensure_runtime_schema(conn):
     """Apply additive runtime schema changes using an existing connection."""
     _ensure_program_schema(conn)
     conn.execute("CREATE TABLE IF NOT EXISTS schema_migrations (version INTEGER PRIMARY KEY, applied_at TEXT NOT NULL DEFAULT (datetime('now')))")
+    if conn.execute("SELECT 1 FROM schema_migrations WHERE version=8").fetchone() is None:
+        conn.execute("""CREATE TABLE IF NOT EXISTS academy_lesson_progress (
+            user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            platform TEXT NOT NULL,
+            course_slug TEXT NOT NULL,
+            lesson_id TEXT NOT NULL,
+            completed_at TEXT NOT NULL DEFAULT (datetime('now')),
+            updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+            PRIMARY KEY (user_id, platform, course_slug, lesson_id)
+        )""")
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_academy_progress_recent ON academy_lesson_progress(user_id, completed_at DESC)")
+        conn.execute("INSERT INTO schema_migrations(version) VALUES (8)")
     conn.execute(
         """
         CREATE TABLE IF NOT EXISTS password_reset_tokens (

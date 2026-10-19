@@ -60,7 +60,7 @@
 
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='20260916-no-competitions') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='enhance.css') }}">
-  {% if request.endpoint and request.endpoint.rpartition('.')[2] in ('learn', 'learn_pathway', 'learn_course', 'learn_lesson') %}<link rel="stylesheet" href="{{ url_for('static', filename='academy.css') }}">{% endif %}
+  {% if request.endpoint and request.endpoint.rpartition('.')[2] in ('learn', 'learn_pathway', 'learn_course', 'learn_lesson', 'learn_my_progress') %}<link rel="stylesheet" href="{{ url_for('static', filename='academy.css') }}">{% endif %}
 
   {# Picks the visual tier before first paint so the page never flashes the
      wrong one. A saved override ("high"/"low") wins; otherwise we weigh a few
@@ -156,6 +156,7 @@
           <a href="{{ url_for('account_settings') }}">Account settings</a>
           <a href="{{ url_for('my_team') }}">My Team</a>
           <a href="{{ url_for('library') }}">My Library</a>
+          <a href="{{ url_for('learn_my_progress') }}">My Learning</a>
           <a href="{{ url_for('notifications') }}">Notifications{% if unread_notifications %}<span class="notification-count">{{ unread_notifications }}</span>{% endif %}</a>
           {% if current_user['is_admin'] %}<a href="{{ url_for('admin_stats') }}">Growth stats</a><a href="{{ url_for('comment_moderation') }}">Moderation</a><a href="{{ url_for('security_incidents') }}">Incidents</a>{% endif %}
           <form method="post" action="{{ url_for('logout') }}">
