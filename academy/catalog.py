@@ -2,13 +2,10 @@
 
 import re
 
-from academy.content.assemblies_motion import build_course as build_assemblies_motion
 from academy.content.parallel_plate import ENGINEERING_BRIEF, OBJECTIVES, RUBRIC, build_course as build_parallel_plate
-from academy.content.parts_libraries import build_course as build_parts_libraries
 from academy.content.quick_start import build_course as build_quick_start
-from academy.content.sketching_parameters import build_course as build_sketching_parameters
 
-LEVELS = ("Start Here", "CAD Foundations", "FTC-Ready CAD", "Mechanism Labs", "Robot Integration and Strategy")
+LEVELS = ("Start Here", "Mechanism Labs")
 DIFFICULTIES = frozenset({"Beginner", "Intermediate", "Advanced"})
 STATUSES = frozenset({"Live", "Planned"})
 
@@ -37,11 +34,7 @@ def _planned_course(platform, item):
 CATALOG = {
     platform: (
         build_quick_start(platform, pathway["name"]),
-        build_sketching_parameters(platform, pathway["name"]),
-        build_parts_libraries(platform, pathway["name"]),
-        build_assemblies_motion(platform, pathway["name"]),
         build_parallel_plate(platform, pathway["name"]),
-        _planned_course(platform, PLANNED[0]),
     )
     for platform, pathway in PATHWAYS.items()
 }

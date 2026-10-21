@@ -29,8 +29,10 @@ class AcademyProgressTests(unittest.TestCase):
         conn.close()
         self.course = get_course("onshape", "quick-start-cad-mental-model")
         self.lesson = self.course["lessons"][0]["id"]
-        self.path = f"/learn/onshape/{self.course['slug']}/lessons/{self.lesson}"
-        self.post_path = self.path + "/completion"
+        self.lesson_path = f"/learn/onshape/{self.course['slug']}/lessons/{self.lesson}"
+        self.path = self.lesson_path + "/steps/1"
+        self.last_path = self.lesson_path + f"/steps/{len(self.course['lessons'][0]['steps'])}"
+        self.post_path = self.lesson_path + "/completion"
 
     def tearDown(self):
         self.db_patch.stop()
@@ -64,12 +66,15 @@ class AcademyProgressTests(unittest.TestCase):
 
     def test_completion_idempotence_reversal_and_isolation(self):
         self.sign_in()
+        self.assertIn("Mark lesson complete", self.client.get(self.last_path).get_data(as_text=True))
         self.assertEqual(self.submit().status_code, 302)
+        self.assertEqual(self.submit().location, self.last_path)
         self.assertEqual(self.submit().status_code, 302)
         self.assertEqual(len(self.rows()), 1)
-        self.assertIn("Lesson complete", self.client.get(self.path).get_data(as_text=True))
+        self.assertEqual(self.client.get(self.last_path).status_code, 200)
+        self.assertIn("Start the next lesson", self.client.get(self.last_path).get_data(as_text=True))
         self.sign_in(1)
-        self.assertNotIn("✓ Lesson complete", self.client.get(self.path).get_data(as_text=True))
+        self.assertIn("Mark lesson complete", self.client.get(self.last_path).get_data(as_text=True))
         self.submit("incomplete")
         self.assertEqual(len(self.rows()), 1)
         self.sign_in()
@@ -100,7 +105,7 @@ class AcademyProgressTests(unittest.TestCase):
         self.assertEqual(state["percentage"], 17)
         self.assertEqual(state["first_incomplete"]["id"], self.course["lessons"][1]["id"])
         self.assertEqual(course_progress("fusion-360", get_course("fusion-360", self.course["slug"]), completed)["completed"], 0)
-        self.assertEqual(pathway_progress("onshape", completed)["total"], 32)
+        self.assertEqual(pathway_progress("onshape", completed)["total"], 11)
         self.assertEqual(dashboard_data(completed)["completed"], 1)
         for lesson in self.course["lessons"][1:]:
             conn.execute("INSERT INTO academy_lesson_progress(user_id,platform,course_slug,lesson_id) VALUES (?,?,?,?)",
@@ -113,7 +118,7 @@ class AcademyProgressTests(unittest.TestCase):
         conn.close()
         self.assertIn("My Learning", self.client.get("/learn/my-progress").get_data(as_text=True))
         self.sign_in(1)
-        self.assertIn("0 of 64 lessons complete", self.client.get("/learn/my-progress").get_data(as_text=True))
+        self.assertIn("0 of 22 lessons complete", self.client.get("/learn/my-progress").get_data(as_text=True))
 
     def test_stale_rows_cascade_and_runtime_migration(self):
         conn = db.connect()
@@ -121,8 +126,11 @@ class AcademyProgressTests(unittest.TestCase):
                      (self.users[0], "onshape", self.course["slug"], "removed-lesson"))
         conn.execute("INSERT INTO academy_lesson_progress(user_id,platform,course_slug,lesson_id) VALUES (?,?,?,?)",
                      (self.users[0], "onshape", "robot-integration-strategy", "removed-lesson"))
+        conn.execute("INSERT INTO academy_lesson_progress(user_id,platform,course_slug,lesson_id) VALUES (?,?,?,?)",
+                     (self.users[0], "onshape", "sketching-and-parameters", "old-lesson"))
         conn.commit()
         self.assertEqual(completed_lessons(conn, self.users[0]), {})
+        self.assertEqual(conn.execute("SELECT COUNT(*) n FROM academy_lesson_progress").fetchone()["n"], 3)
         conn.execute("DELETE FROM users WHERE id=?", (self.users[0],))
         conn.commit()
         self.assertEqual(conn.execute("SELECT COUNT(*) n FROM academy_lesson_progress").fetchone()["n"], 0)

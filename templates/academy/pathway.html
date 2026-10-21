@@ -9,7 +9,7 @@
   <p class="eyebrow">CAD pathway</p>
   <h1>{{ pathway.name }}</h1>
   <p class="academy__lead">{{ pathway.description }}</p>
-  <p>Follow the ordered foundations, then apply them in shared FTC mechanism courses.</p>
+  <p>Follow the two courses in order, from CAD fundamentals to a complete FTC drivetrain.</p>
   <p><a href="{{ url_for('learn_pathway', platform=pathway.other) }}">Explore the {{ other.name }} pathway</a> — your transferable CAD skills carry over.</p>
 </header>
 {% if progress %}
@@ -17,7 +17,7 @@
   <h2>Your pathway progress</h2>
   <p>{{ progress.completed }} of {{ progress.total }} lessons complete · {{ progress.percentage }}%</p>
   <progress max="{{ progress.total or 1 }}" value="{{ progress.completed }}" aria-label="{{ pathway.name }} pathway progress"></progress>
-  {% if progress.resume %}<p><a class="btn btn--primary" href="{{ url_for('learn_lesson', platform=platform, course_slug=progress.resume.course.slug, lesson_id=progress.resume.first_incomplete.id) }}">Resume {{ progress.resume.course.title }}</a></p>{% endif %}
+  {% if progress.resume %}<p><a class="btn btn--primary" href="{{ url_for('learn_step', platform=platform, course_slug=progress.resume.course.slug, lesson_id=progress.resume.first_incomplete.id, step_number=1) }}">Resume {{ progress.resume.course.title }}</a></p>{% endif %}
   <ul>{% for item in progress.courses %}<li><a href="{{ url_for('learn_course', platform=platform, course_slug=item.course.slug) }}">{{ item.course.title }}</a>: {{ item.completed }} of {{ item.total }} lessons complete{% if item.complete %} ✓ Course complete{% endif %}</li>{% endfor %}</ul>
 </section>
 {% else %}<p><a href="{{ url_for('login', next=request.path) }}">Sign in to save your progress</a></p>{% endif %}

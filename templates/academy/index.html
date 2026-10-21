@@ -7,7 +7,7 @@
 <header class="academy__hero">
   <p class="eyebrow">Botfolio learning</p>
   <h1>CAD Academy</h1>
-  <p class="academy__lead">One academy, two CAD pathways, and shared engineering challenges. Choose the tool your team uses; the sketching, assembly, verification, and communication skills travel with you.</p>
+  <p class="academy__lead">Two CAD pathways. Start with a bracket and a clear CAD mental model, then design a parallel-plate FTC drivetrain in your team's tool.</p>
   <div class="academy__actions">
     <a class="btn btn--primary" href="{{ url_for('learn_pathway', platform='onshape') }}">Explore Onshape</a>
     <a class="btn" href="{{ url_for('learn_pathway', platform='fusion-360') }}">Explore Fusion 360</a>
@@ -30,11 +30,11 @@
 </section>
 
 <section aria-labelledby="levels-title" class="academy__section">
-  <div class="section-head"><h2 id="levels-title">A roadmap from first sketch to robot strategy</h2></div>
+  <div class="section-head"><h2 id="levels-title">Your two-course roadmap</h2></div>
   <ol class="academy__levels">
     {% for level in levels %}<li><span>{{ level }}</span></li>{% endfor %}
   </ol>
-  <p>Platform foundations lead into shared FTC mechanism labs. Each shared course can have an Onshape edition and a Fusion 360 edition, built around the same engineering outcome.</p>
+  <p>Each course has an Onshape and a Fusion 360 edition built around the same engineering outcome.</p>
 </section>
 
 <section aria-labelledby="rhythm-title" class="academy__section academy__card">
@@ -42,6 +42,6 @@
   <ol class="academy__rhythm">
     <li>Learn a concept</li><li>Build it in CAD</li><li>Debug a real design issue</li><li>Complete a challenge</li><li>Publish an artifact</li>
   </ol>
-  <p>The pilot course is ready to read now. Future courses are clearly marked as planned.</p>
+  <p>Both courses are ready now. Open a lesson plan, then work through its steps one at a time.</p>
 </section>
 {% endblock %}

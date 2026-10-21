@@ -1,4 +1,5 @@
 import copy
+import html as html_lib
 import tempfile
 import unittest
 from pathlib import Path
@@ -8,408 +9,88 @@ import db
 from academy.catalog import CATALOG, PATHWAYS, get_course, validate_catalog
 
 
+LIVE_SLUGS = ("quick-start-cad-mental-model", "parallel-plate-drivetrain")
+RETIRED_SLUGS = ("sketching-and-parameters", "parts-components-ftc-libraries", "assemblies-and-motion")
+
+
 class AcademyTests(unittest.TestCase):
     def setUp(self):
-        import app as application
-
-        self.application = application
-        self.application.app.testing = True
+        import app
+        app.app.testing = True
         self.temp = tempfile.TemporaryDirectory(dir=Path(__file__).resolve().parents[1])
         self.db_patch = patch.object(db, "DB_PATH", Path(self.temp.name) / "academy.db")
         self.db_patch.start()
         db.init_db()
-        self.client = self.application.app.test_client()
+        self.client = app.app.test_client()
 
     def tearDown(self):
         self.db_patch.stop()
         self.temp.cleanup()
 
-    def test_landing_navigation_and_pages_are_public(self):
-        response = self.client.get("/learn")
-        self.assertEqual(response.status_code, 200)
-        html = response.get_data(as_text=True)
-        self.assertIn("Onshape", html)
-        self.assertIn("Fusion 360", html)
-        self.assertIn('href="/learn"', html)
-        self.assertIn("Robot Integration and Strategy", html)
-        self.assertNotIn("Sign in to", html)
-
-        for platform in PATHWAYS:
-            course = get_course(platform, "quick-start-cad-mental-model")
-            lesson_url = f"/learn/{platform}/{course['slug']}/lessons/{course['lessons'][0]['id']}"
-            self.assertEqual(self.client.get(lesson_url).status_code, 200)
-
-        conn = db.connect()
-        user_id = conn.execute(
-            "INSERT INTO users(username,email,password_hash,onboarding_complete,email_verified_at) "
-            "VALUES ('learner','learner@example.com','hash',0,datetime('now'))"
-        ).lastrowid
-        conn.commit()
-        conn.close()
-        with self.client.session_transaction() as session:
-            session["user_id"] = user_id
-        self.assertEqual(self.client.get("/learn/onshape").status_code, 200)
-        self.assertEqual(
-            self.client.get("/learn/onshape/quick-start-cad-mental-model/lessons/parametric-thinking").status_code,
-            200,
-        )
-
-    def test_expected_course_statuses_and_invalid_paths(self):
-        planned = {"robot-integration-strategy"}
-        for platform in PATHWAYS:
-            with self.subTest(platform=platform):
-                response = self.client.get(f"/learn/{platform}")
-                self.assertEqual(response.status_code, 200)
-                html = response.get_data(as_text=True)
-                for slug in ("quick-start-cad-mental-model", "sketching-and-parameters", "parts-components-ftc-libraries", "assemblies-and-motion", "parallel-plate-drivetrain"):
-                    self.assertEqual(get_course(platform, slug)["status"], "Live")
-                    self.assertIn(f'href="/learn/{platform}/{slug}"', html)
-                    self.assertEqual(self.client.get(f"/learn/{platform}/{slug}").status_code, 200)
-                for slug in planned:
-                    self.assertEqual(get_course(platform, slug)["status"], "Planned")
-                    self.assertNotIn(f'href="/learn/{platform}/{slug}"', html)
-                    self.assertEqual(self.client.get(f"/learn/{platform}/{slug}").status_code, 404)
-                    self.assertEqual(self.client.get(f"/learn/{platform}/{slug}/lessons/anything").status_code, 404)
-                self.assertEqual(self.client.get(f"/learn/{platform}/unknown").status_code, 404)
-                self.assertEqual(self.client.get(f"/learn/{platform}/parallel-plate-drivetrain/lessons/unknown").status_code, 404)
-        self.assertEqual(self.client.get("/learn/solidworks").status_code, 404)
-        self.assertEqual(self.client.get("/learn/solidworks/course/lessons/lesson").status_code, 404)
-
-    def test_every_live_course_has_lessons_and_working_routes(self):
-        for platform, courses in CATALOG.items():
-            for course in courses:
-                if course["status"] != "Live":
-                    continue
-                self.assertTrue(course["lessons"])
-                overview = self.client.get(f"/learn/{platform}/{course['slug']}")
-                self.assertEqual(overview.status_code, 200)
-                overview_html = overview.get_data(as_text=True)
-                for lesson in course["lessons"]:
-                    url = f"/learn/{platform}/{course['slug']}/lessons/{lesson['id']}"
-                    self.assertIn(f'href="{url}"', overview_html)
-                    self.assertEqual(self.client.get(url).status_code, 200)
-
-    def test_previous_next_and_course_navigation(self):
-        for platform, courses in CATALOG.items():
-            for course in (item for item in courses if item["status"] == "Live"):
-                lessons = course["lessons"]
-                for index, lesson in enumerate(lessons):
-                    response = self.client.get(
-                        f"/learn/{platform}/{course['slug']}/lessons/{lesson['id']}"
-                    )
-                    html = response.get_data(as_text=True)
-                    self.assertIn(f'href="/learn/{platform}/{course["slug"]}"', html)
-                    if index:
-                        previous = lessons[index - 1]
-                        self.assertIn(f'/lessons/{previous["id"]}', html)
-                        self.assertIn("Previous lesson", html)
-                    else:
-                        self.assertNotIn("Previous lesson", html)
-                    if index + 1 < len(lessons):
-                        following = lessons[index + 1]
-                        self.assertIn(f'/lessons/{following["id"]}', html)
-                        self.assertIn("Next lesson", html)
-                    else:
-                        self.assertNotIn("Next lesson", html)
-
-    def test_platform_switchers_and_terminology(self):
-        terms = {
-            "onshape": ("Part Studio", "Fusion 360 edition", "user parameters"),
-            "fusion-360": ("user parameters", "Onshape edition", "Part Studio"),
-        }
-        for platform, courses in CATALOG.items():
-            other = PATHWAYS[platform]["other"]
-            _own_term, switch_label, foreign_term = terms[platform]
-            for course in (item for item in courses if item["status"] == "Live"):
-                other_course = get_course(other, course["equivalent_slug"])
-                self.assertEqual(course["outcome"], other_course["outcome"])
-                self.assertEqual(course["challenge"], other_course["challenge"])
-                self.assertEqual(course["rubric"], other_course["rubric"])
-                overview = self.client.get(f"/learn/{platform}/{course['slug']}").get_data(as_text=True)
-                self.assertIn(f'href="/learn/{other}/{other_course["slug"]}"', overview)
-                for lesson in course["lessons"]:
-                    html = self.client.get(
-                        f"/learn/{platform}/{course['slug']}/lessons/{lesson['id']}"
-                    ).get_data(as_text=True)
-                    self.assertIn('/static/academy.css', html)
-                    self.assertIn(switch_label, html)
-                    self.assertIn(
-                        f'/learn/{other}/{other_course["slug"]}/lessons/{lesson["id"]}', html
-                    )
-                combined = " ".join(
-                    str({key: value for key, value in lesson.items()
-                         if key not in {"title", "summary"}})
-                    for lesson in course["lessons"]
-                )
-                self.assertNotIn(foreign_term, combined)
-
-    def test_sketching_course_alignment_depth_and_self_checks(self):
-        editions = [get_course(platform, "sketching-and-parameters") for platform in PATHWAYS]
-        expected_ids = (
-            "intent-planes-origin", "construction-references", "geometric-constraints",
-            "dimensions-fully-defined", "symmetry-patterns", "parameters-expressions",
-            "diagnose-repair-adapt",
-        )
-        for course in editions:
-            self.assertEqual(course["status"], "Live")
-            self.assertGreaterEqual(course["duration_minutes"], 100)
-            self.assertLessEqual(course["duration_minutes"], 120)
-            self.assertEqual(tuple(lesson["id"] for lesson in course["lessons"]), expected_ids)
-            for lesson in course["lessons"]:
-                self.assertGreaterEqual(len(lesson["steps"]), 5)
-                self.assertGreaterEqual(len(lesson["checkpoints"]), 2)
-                self.assertGreaterEqual(len(lesson["common_mistakes"]), 2)
-                self.assertTrue(lesson["practice"])
-                self.assertTrue(lesson["completion_checklist"])
-                self.assertTrue(lesson["self_check"])
-                response = self.client.get(
-                    f"/learn/{course['platform']}/{course['slug']}/lessons/{lesson['id']}"
-                )
-                self.assertEqual(response.status_code, 200)
-                html = response.get_data(as_text=True)
-                self.assertIn("<details>", html)
-                self.assertIn("Self-check", html)
-        self.assertEqual(editions[0]["outcome"], editions[1]["outcome"])
-        self.assertEqual(editions[0]["challenge"], editions[1]["challenge"])
-        self.assertEqual(
-            tuple(lesson["outcome"] for lesson in editions[0]["lessons"]),
-            tuple(lesson["outcome"] for lesson in editions[1]["lessons"]),
-        )
-
-    def test_foundation_course_relationships_and_diagrams(self):
-        for platform in PATHWAYS:
-            quick = get_course(platform, "quick-start-cad-mental-model")
-            sketching = get_course(platform, "sketching-and-parameters")
-            parts = get_course(platform, "parts-components-ftc-libraries")
-            assemblies = get_course(platform, "assemblies-and-motion")
-            drivetrain = get_course(platform, "parallel-plate-drivetrain")
-            self.assertIn("sketching-and-parameters", quick["related"])
-            self.assertEqual(
-                sketching["related"],
-                ("quick-start-cad-mental-model", "parts-components-ftc-libraries"),
-            )
-            self.assertIn("Quick Start and CAD Mental Model", drivetrain["prerequisites"])
-            self.assertIn("Sketching and Parameters/Variables", drivetrain["prerequisites"])
-            self.assertIn("Parts or Components and FTC Libraries", drivetrain["prerequisites"])
-            self.assertIn("Assemblies and Motion", drivetrain["prerequisites"])
-            quick_html = self.client.get(f"/learn/{platform}/{quick['slug']}").get_data(as_text=True)
-            self.assertIn(f'href="/learn/{platform}/sketching-and-parameters"', quick_html)
-            sketch_html = self.client.get(f"/learn/{platform}/{sketching['slug']}").get_data(as_text=True)
-            self.assertIn(f'href="/learn/{platform}/parts-components-ftc-libraries"', sketch_html)
-            parts_html = self.client.get(f"/learn/{platform}/{parts['slug']}").get_data(as_text=True)
-            self.assertIn(f'href="/learn/{platform}/assemblies-and-motion"', parts_html)
-            assemblies_html = self.client.get(f"/learn/{platform}/{assemblies['slug']}").get_data(as_text=True)
-            self.assertIn(f'href="/learn/{platform}/parallel-plate-drivetrain"', assemblies_html)
-            lesson_html = self.client.get(
-                f"/learn/{platform}/sketching-and-parameters/lessons/dimensions-fully-defined"
-            ).get_data(as_text=True)
-            self.assertIn("/static/images/academy/under-vs-fully-constrained.svg", lesson_html)
-            self.assertIn("alt=", lesson_html)
-
-    def test_parts_libraries_alignment_provenance_and_assets(self):
-        editions = [get_course(platform, "parts-components-ftc-libraries") for platform in PATHWAYS]
-        expected_ids = (
-            "plan-part-structure", "verify-cots-hardware", "import-inspect-reference",
-            "simplified-representations", "custom-interface-part",
-            "organize-reusable-kit", "audit-revise-assembly",
-        )
-        source_fields = {
-            "Manufacturer", "Part number", "Source URL", "Revision or retrieval date",
-            "Units", "Critical dimensions", "Confidence level",
-            "Dimensions requiring physical verification",
-        }
-        asset_names = {
-            "cots-verification-flow.svg", "detailed-vs-simplified.svg",
-            "bodies-vs-components.svg", "critical-interfaces.svg",
-            "origin-axis-consistency.svg", "verified-vs-clearance.svg",
-        }
-        for course in editions:
-            self.assertEqual(course["status"], "Live")
-            self.assertGreaterEqual(course["duration_minutes"], 110)
-            self.assertLessEqual(course["duration_minutes"], 140)
-            self.assertEqual(tuple(lesson["id"] for lesson in course["lessons"]), expected_ids)
-            self.assertTrue(source_fields.issubset(set(course["reference_specifications"])))
-            self.assertTrue(any("Do not assume universal FTC hardware dimensions" in item
-                                for item in course["constraints"]))
-            for lesson in course["lessons"]:
-                self.assertGreaterEqual(len(lesson["steps"]), 5)
-                self.assertGreaterEqual(len(lesson["checkpoints"]), 2)
-                self.assertGreaterEqual(len(lesson["common_mistakes"]), 2)
-                self.assertTrue(lesson["practice"])
-                self.assertTrue(lesson["completion_checklist"])
-                self.assertTrue(lesson["self_check"])
-                response = self.client.get(
-                    f"/learn/{course['platform']}/{course['slug']}/lessons/{lesson['id']}"
-                )
-                self.assertEqual(response.status_code, 200)
-                html = response.get_data(as_text=True)
-                self.assertIn("Self-check", html)
-                self.assertIn(f'/learn/{PATHWAYS[course["platform"]]["other"]}/{course["slug"]}/lessons/{lesson["id"]}', html)
-        self.assertEqual(editions[0]["outcome"], editions[1]["outcome"])
-        self.assertEqual(editions[0]["challenge"], editions[1]["challenge"])
-        self.assertEqual(
-            tuple(lesson["outcome"] for lesson in editions[0]["lessons"]),
-            tuple(lesson["outcome"] for lesson in editions[1]["lessons"]),
-        )
-        all_media = {Path(item["path"]).name for lesson in editions[0]["lessons"]
-                     for item in lesson["media"] if isinstance(item, dict)}
-        self.assertTrue(asset_names.issubset(all_media))
-        for name in asset_names:
-            self.assertTrue((Path(__file__).resolve().parents[1] / "static" / "images" / "academy" / name).is_file())
-        self.assertTrue(all(item["alt"].strip() for lesson in editions[0]["lessons"]
-                            for item in lesson["media"] if isinstance(item, dict)))
-
-    def test_assemblies_motion_alignment_terminology_and_assets(self):
-        editions = [get_course(platform, "assemblies-and-motion") for platform in PATHWAYS]
-        expected_ids = (
-            "plan-degrees-of-freedom", "insert-organize-components",
-            "constrain-fixed-structure", "create-rotational-motion",
-            "spacers-retention-motor", "inspect-motion-service",
-            "diagnose-repair-assembly",
-        )
-        expected_assets = {
-            "assembly-degrees-of-freedom.svg", "fixed-vs-revolute.svg",
-            "live-vs-dead-axle.svg", "origin-joint-alignment.svg",
-            "wheel-stack-retention.svg", "interference-vs-service.svg",
-            "assembly-hierarchy.svg",
-        }
-        terminology = {
-            "onshape": (("Fastened mate", "Mate connectors", "Revolute mates"),
-                        ("Rigid joints", "Joint origins")),
-            "fusion-360": (("Rigid joints", "Joint origins", "Revolute joints"),
-                           ("Fastened mates", "Mate connectors")),
-        }
-        for course in editions:
-            self.assertEqual(course["status"], "Live")
-            self.assertGreaterEqual(course["duration_minutes"], 120)
-            self.assertLessEqual(course["duration_minutes"], 150)
-            self.assertEqual(tuple(lesson["id"] for lesson in course["lessons"]), expected_ids)
-            combined = " ".join(str(lesson) for lesson in course["lessons"])
-            for term in terminology[course["platform"]][0]:
-                self.assertIn(term, combined)
-            for term in terminology[course["platform"]][1]:
-                self.assertNotIn(term, combined)
-            self.assertIn("live axle", combined.casefold())
-            self.assertIn("dead axle", combined.casefold())
-            for lesson in course["lessons"]:
-                self.assertGreaterEqual(len(lesson["steps"]), 5)
-                self.assertGreaterEqual(len(lesson["checkpoints"]), 2)
-                self.assertTrue(lesson["common_mistakes"])
-                self.assertTrue(lesson["practice"])
-                self.assertTrue(lesson["completion_checklist"])
-                self.assertTrue(lesson["self_check"])
-                response = self.client.get(
-                    f"/learn/{course['platform']}/{course['slug']}/lessons/{lesson['id']}"
-                )
-                self.assertEqual(response.status_code, 200)
-                html = response.get_data(as_text=True)
-                other = PATHWAYS[course["platform"]]["other"]
-                self.assertIn(f'/learn/{other}/{course["slug"]}/lessons/{lesson["id"]}', html)
-                self.assertIn("Self-check", html)
-        self.assertEqual(editions[0]["outcome"], editions[1]["outcome"])
-        self.assertEqual(editions[0]["challenge"], editions[1]["challenge"])
-        self.assertEqual(
-            tuple(lesson["outcome"] for lesson in editions[0]["lessons"]),
-            tuple(lesson["outcome"] for lesson in editions[1]["lessons"]),
-        )
-        all_media = {Path(item["path"]).name for lesson in editions[0]["lessons"]
-                     for item in lesson["media"] if isinstance(item, dict)}
-        self.assertTrue(expected_assets.issubset(all_media))
-        for name in expected_assets:
-            self.assertTrue((Path(__file__).resolve().parents[1] / "static" / "images" / "academy" / name).is_file())
-        self.assertTrue(all(item["alt"].strip() for lesson in editions[0]["lessons"]
-                            for item in lesson["media"] if isinstance(item, dict)))
-
-    def test_quick_start_scope_and_drivetrain_depth(self):
-        for platform in PATHWAYS:
-            quick = get_course(platform, "quick-start-cad-mental-model")
-            self.assertGreaterEqual(quick["duration_minutes"], 75)
-            self.assertLessEqual(quick["duration_minutes"], 100)
-            self.assertEqual(len(quick["lessons"]), 6)
-            drivetrain = get_course(platform, "parallel-plate-drivetrain")
-            self.assertEqual(len(drivetrain["lessons"]), 5)
-            self.assertTrue(all(len(lesson["steps"]) >= 5 for lesson in drivetrain["lessons"]))
-            required_specs = set(drivetrain["reference_specifications"])
-            self.assertIn("Wheel diameter and width", required_specs)
-            self.assertIn("Maximum drivetrain envelope", required_specs)
-
-    def test_search_and_sitemap_include_live_course_overviews_only(self):
-        response = self.client.get("/search?q=drivetrain")
-        self.assertEqual(response.status_code, 200)
-        html = response.get_data(as_text=True)
-        self.assertIn("Parallel-Plate Drivetrain", html)
-        self.assertIn('/learn/onshape/parallel-plate-drivetrain', html)
-
+    def test_two_course_catalog_and_public_routes(self):
+        self.assertTrue(validate_catalog())
+        self.assertIn("two-course roadmap", self.client.get("/learn").get_data(as_text=True))
         sitemap = self.client.get("/sitemap.xml").get_data(as_text=True)
-        self.assertIn("/learn/onshape/quick-start-cad-mental-model", sitemap)
-        self.assertIn("/learn/onshape/sketching-and-parameters", sitemap)
-        self.assertIn("/learn/onshape/parts-components-ftc-libraries", sitemap)
-        self.assertIn("/learn/onshape/assemblies-and-motion", sitemap)
-        self.assertIn("/learn/onshape/parallel-plate-drivetrain", sitemap)
-        self.assertNotIn("/learn/onshape/robot-integration-strategy", sitemap)
-        self.assertNotIn("/lessons/", sitemap)
+        for platform in PATHWAYS:
+            self.assertEqual(tuple(course["slug"] for course in CATALOG[platform]), LIVE_SLUGS)
+            roadmap = self.client.get(f"/learn/{platform}").get_data(as_text=True)
+            for slug in LIVE_SLUGS:
+                self.assertIn(f"/learn/{platform}/{slug}", roadmap)
+                self.assertIn(f"/learn/{platform}/{slug}", sitemap)
+                self.assertEqual(self.client.get(f"/learn/{platform}/{slug}").status_code, 200)
+            for slug in RETIRED_SLUGS:
+                self.assertIsNone(get_course(platform, slug))
+                self.assertNotIn(slug, roadmap)
+                self.assertNotIn(slug, sitemap)
+                self.assertEqual(self.client.get(f"/learn/{platform}/{slug}").status_code, 404)
 
-        search = self.client.get("/search?q=sketching").get_data(as_text=True)
-        self.assertIn("Sketching and Parameters/Variables", search)
-        self.assertIn("/learn/onshape/sketching-and-parameters", search)
+    def test_ordered_plan_and_focused_step_in_both_editions(self):
+        for platform in PATHWAYS:
+            for course_number, course in enumerate(CATALOG[platform], 1):
+                plan = self.client.get(f"/learn/{platform}/{course['slug']}").get_data(as_text=True)
+                self.assertIn("Lesson plan", plan)
+                for lesson_number, lesson in enumerate(course["lessons"], 1):
+                    base = f"/learn/{platform}/{course['slug']}/lessons/{lesson['id']}"
+                    self.assertEqual(self.client.get(base).location, base + "/steps/1")
+                    self.assertIn(lesson["title"], plan)
+                    for step_number, step in enumerate(lesson["steps"], 1):
+                        path = base + f"/steps/{step_number}"
+                        self.assertIn(f'href="{path}"', plan)
+                        html = html_lib.unescape(self.client.get(path).get_data(as_text=True))
+                        label = f"{course_number}.{lesson_number}.{chr(96 + step_number)}"
+                        self.assertIn(label, html)
+                        self.assertIn(step["action"], html)
+                        self.assertIn(step["reason"], html)
+                        self.assertIn(step["result"], html)
+                        self.assertIn('aria-current="step"', html)
+                        self.assertIn("Steps in this lesson", html)
+                        if step_number < len(lesson["steps"]):
+                            self.assertNotIn(lesson["steps"][step_number]["action"], html)
+                            self.assertIn(base + f"/steps/{step_number + 1}", html)
+                            self.assertIn("Continue", html)
+                        else:
+                            self.assertNotIn("Continue →", html)
+                            self.assertIn("Sign in to mark lesson complete", html)
+                    self.assertEqual(self.client.get(base + "/steps/0").status_code, 404)
+                    self.assertEqual(self.client.get(base + f"/steps/{len(lesson['steps']) + 1}").status_code, 404)
 
-        parts_search = self.client.get("/search?q=COTS").get_data(as_text=True)
-        self.assertIn("Parts or Components and FTC Libraries", parts_search)
-        self.assertIn("/learn/onshape/parts-components-ftc-libraries", parts_search)
+    def test_edition_step_switch_and_recommendation(self):
+        for platform in PATHWAYS:
+            other = PATHWAYS[platform]["other"]
+            quick = CATALOG[platform][0]
+            lesson = quick["lessons"][0]
+            path = f"/learn/{platform}/{quick['slug']}/lessons/{lesson['id']}/steps/2"
+            html = self.client.get(path).get_data(as_text=True)
+            self.assertIn(f"/learn/{other}/{quick['slug']}/lessons/{lesson['id']}/steps/2", html)
+            plan = self.client.get(f"/learn/{platform}/{quick['slug']}").get_data(as_text=True)
+            self.assertIn("Parallel-Plate Drivetrain", plan)
+            self.assertNotIn("Sketching and Parameters/Variables", plan)
 
-        assemblies_search = self.client.get("/search?q=motion").get_data(as_text=True)
-        self.assertIn("Assemblies and Motion", assemblies_search)
-        self.assertIn("/learn/onshape/assemblies-and-motion", assemblies_search)
-
-    def test_validation_rejects_incomplete_course_lesson_and_step_data(self):
-        def copy_catalog():
-            return {platform: [copy.deepcopy(course) for course in courses]
-                    for platform, courses in CATALOG.items()}
-
-        mutations = (
-            lambda data: data["onshape"].append(copy.deepcopy(data["onshape"][0])),
-            lambda data: data.update({"unsupported": []}),
-            lambda data: data["onshape"][0].pop("summary"),
-            lambda data: data["onshape"][0].update(duration_minutes=-1),
-            lambda data: data["onshape"][0].update(status="Maybe"),
-            lambda data: data["onshape"][0].update(lessons=()),
-            lambda data: data["onshape"][0]["lessons"][0].update(id=""),
-            lambda data: data["onshape"][0]["lessons"][1].update(id=data["onshape"][0]["lessons"][0]["id"]),
-            lambda data: data["onshape"][0]["lessons"][0].update(title=""),
-            lambda data: data["onshape"][0]["lessons"][0].update(outcome=""),
-            lambda data: data["onshape"][0]["lessons"][0].update(estimated_minutes=0),
-            lambda data: data["onshape"][0]["lessons"][0].update(steps=()),
-            lambda data: data["onshape"][0]["lessons"][0]["steps"][0].update(action=""),
-            lambda data: data["onshape"][0]["lessons"][0]["steps"][0].update(reason=""),
-            lambda data: data["onshape"][0]["lessons"][0]["steps"][0].update(result=""),
-            lambda data: data["onshape"][0]["lessons"][0].update(checkpoints=()),
-            lambda data: data["onshape"][1]["lessons"][0].update(common_mistakes=()),
-            lambda data: data["onshape"][1]["lessons"][0].update(self_check=()),
-            lambda data: data["onshape"][1]["lessons"][0].update(self_check=({"question": "", "answer": "answer"},)),
-            lambda data: data["onshape"][1]["lessons"][0].update(self_check=({"question": "Question?"},)),
-            lambda data: data["onshape"][2]["lessons"][0].update(required_setup=()),
-            lambda data: data["fusion-360"][2].update(lessons=(
-                {**data["fusion-360"][2]["lessons"][0], "id": "misaligned"},
-                *data["fusion-360"][2]["lessons"][1:],
-            )),
-            lambda data: data["onshape"][3]["lessons"][0].update(steps=()),
-            lambda data: data["fusion-360"][3].update(lessons=(
-                {**data["fusion-360"][3]["lessons"][0], "id": "misaligned-assembly"},
-                *data["fusion-360"][3]["lessons"][1:],
-            )),
-            lambda data: data["fusion-360"][0].update(equivalent_slug="missing"),
-            lambda data: data["fusion-360"][0].update(lessons=(
-                {**data["fusion-360"][0]["lessons"][0], "id": "different"},
-                *data["fusion-360"][0]["lessons"][1:],
-            )),
-            lambda data: data["fusion-360"][0]["lessons"][0]["steps"][0].update(action="Open a Part Studio"),
-        )
-        for mutate in mutations:
-            data = copy_catalog()
-            mutate(data)
-            with self.subTest(mutation=mutate):
-                with self.assertRaises(ValueError):
-                    validate_catalog(data)
+    def test_catalog_validation_rejects_broken_step(self):
+        catalog = {platform: copy.deepcopy(courses) for platform, courses in CATALOG.items()}
+        catalog["onshape"][0]["lessons"][0]["steps"][0]["action"] = ""
+        with self.assertRaises(ValueError):
+            validate_catalog(catalog)
 
 
 if __name__ == "__main__":

@@ -44,7 +44,10 @@ def learn_course(platform, course_slug):
     user = core.current_user()
     completed = completed_lessons(db.get_db(), user["id"]) if user else None
     progress = course_progress(platform, course, completed) if completed is not None else None
+    course_number = next(index for index, item in enumerate(CATALOG[platform], 1)
+                         if item["slug"] == course_slug)
     return render_template("academy/course.html", platform=platform, progress=progress,
+                           course_number=course_number,
                            completed_lessons=completed,
                            pathway=PATHWAYS[platform], course=course,
                            other_platform=other_slug,
@@ -54,13 +57,21 @@ def learn_course(platform, course_slug):
 
 @academy_bp.get("/learn/<platform>/<course_slug>/lessons/<lesson_id>")
 def learn_lesson(platform, course_slug, lesson_id):
+    if valid_lesson(platform, course_slug, lesson_id) is None:
+        abort(404)
+    return redirect(url_for("learn_step", platform=platform, course_slug=course_slug,
+                            lesson_id=lesson_id, step_number=1))
+
+
+@academy_bp.get("/learn/<platform>/<course_slug>/lessons/<lesson_id>/steps/<int:step_number>")
+def learn_step(platform, course_slug, lesson_id, step_number):
     if platform not in PATHWAYS:
         abort(404)
     course = get_course(platform, course_slug)
     if course is None or course["status"] != "Live":
         abort(404)
     lesson = get_lesson(course, lesson_id)
-    if lesson is None:
+    if lesson is None or step_number < 1 or step_number > len(lesson["steps"]):
         abort(404)
     previous_lesson, next_lesson = get_lesson_neighbors(course, lesson_id)
     other_platform = PATHWAYS[platform]["other"]
@@ -68,12 +79,15 @@ def learn_lesson(platform, course_slug, lesson_id):
     other_lesson = get_lesson(other_course, lesson_id) if other_course and other_course["status"] == "Live" else None
     lesson_number = next(index for index, item in enumerate(course["lessons"], 1)
                          if item["id"] == lesson_id)
+    course_number = next(index for index, item in enumerate(CATALOG[platform], 1)
+                         if item["slug"] == course_slug)
     user = core.current_user()
     completed = completed_lessons(db.get_db(), user["id"]) if user else None
     is_complete = (platform, course_slug, lesson_id) in completed if completed is not None else False
     return render_template(
         "academy/lesson.html", platform=platform, pathway=PATHWAYS[platform],
-        is_complete=is_complete,
+        is_complete=is_complete, step=lesson["steps"][step_number - 1],
+        step_number=step_number, course_number=course_number,
         course=course, lesson=lesson, lesson_number=lesson_number,
         previous_lesson=previous_lesson, next_lesson=next_lesson,
         other_platform=other_platform, other=PATHWAYS[other_platform],
@@ -101,8 +115,10 @@ def learn_completion(platform, course_slug, lesson_id):
                      "AND course_slug=? AND lesson_id=?", key)
         flash("Lesson marked incomplete.", "success")
     conn.commit()
-    return redirect(url_for("learn_lesson", platform=platform,
-                            course_slug=course_slug, lesson_id=lesson_id))
+    course, lesson = valid_lesson(platform, course_slug, lesson_id)
+    return redirect(url_for("learn_step", platform=platform,
+                            course_slug=course_slug, lesson_id=lesson_id,
+                            step_number=len(lesson["steps"])))
 
 
 @academy_bp.get("/learn/my-progress")

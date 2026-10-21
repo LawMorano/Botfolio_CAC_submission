@@ -23,7 +23,7 @@
   <h2>Your progress</h2>
   <p>{{ progress.completed }} of {{ progress.total }} lessons complete · {{ progress.percentage }}%</p>
   <progress max="{{ progress.total or 1 }}" value="{{ progress.completed }}" aria-label="{{ course.title }} progress"></progress>
-  {% if progress.first_incomplete %}<p><a class="btn btn--primary" href="{{ url_for('learn_lesson', platform=platform, course_slug=course.slug, lesson_id=progress.first_incomplete.id) }}">{{ progress.action }}</a></p>
+  {% if progress.first_incomplete %}<p><a class="btn btn--primary" href="{{ url_for('learn_step', platform=platform, course_slug=course.slug, lesson_id=progress.first_incomplete.id, step_number=1) }}">{{ progress.action }}</a></p>
   {% elif progress.complete %}<p><a class="btn btn--primary" href="#lessons-title">Review course</a></p>{% endif %}
 </section>
 {% else %}<p><a href="{{ url_for('login', next=request.path) }}">Sign in to save your progress</a></p>{% endif %}
@@ -59,9 +59,10 @@
     </section>
 
     <section class="academy__section" aria-labelledby="lessons-title">
-      <div class="section-head"><h2 id="lessons-title">Lessons</h2><p>{{ course.lessons|length }} lessons · {{ course.duration_minutes }} minutes</p></div>
+      <div class="section-head"><h2 id="lessons-title">Lesson plan</h2><p>{{ course.lessons|length }} lessons · {{ course.duration_minutes }} minutes</p></div>
       <ol class="academy__lesson-cards">
         {% for lesson in course.lessons %}
+        {% set lesson_number = loop.index %}
         <li id="lesson-{{ lesson.id }}" class="academy__card academy__lesson-card">
           <div class="academy__lesson-card-number" aria-hidden="true">{{ loop.index }}</div>
           <div>
@@ -70,7 +71,12 @@
             {% if completed_lessons is not none %}<p>{% if (platform, course.slug, lesson.id) in completed_lessons %}✓ Complete{% else %}○ Not complete{% endif %}</p>{% endif %}
             <p>{{ lesson.summary }}</p>
             <p class="academy__concepts"><strong>Concepts:</strong> {{ lesson.concepts|join(', ') }}</p>
-            <a class="btn btn--primary" href="{{ url_for('learn_lesson', platform=platform, course_slug=course.slug, lesson_id=lesson.id) }}">Start lesson</a>
+            <a class="academy__lesson-title-link" href="{{ url_for('learn_step', platform=platform, course_slug=course.slug, lesson_id=lesson.id, step_number=1) }}">Open lesson →</a>
+            <ol class="academy__plan-steps" aria-label="Steps in {{ lesson.title }}">
+              {% for step in lesson.steps %}
+              <li><a href="{{ url_for('learn_step', platform=platform, course_slug=course.slug, lesson_id=lesson.id, step_number=loop.index) }}"><span>{{ course_number }}.{{ lesson_number }}.{{ 'abcdefghijklmnopqrstuvwxyz'[loop.index0] }}</span> {{ step.title }}</a></li>
+              {% endfor %}
+            </ol>
           </div>
         </li>
         {% endfor %}

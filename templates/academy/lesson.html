@@ -1,127 +1,61 @@
 {% extends "base.html" %}
-{% block title %}{{ lesson.title }} · {{ course.title }} · {{ pathway.name }} — Botfolio{% endblock %}
-{% block meta_description %}{{ lesson.summary }} A {{ lesson.estimated_minutes }}-minute {{ pathway.name }} lesson from Botfolio CAD Academy.{% endblock %}
+{% block title %}Step {{ course_number }}.{{ lesson_number }}.{{ 'abcdefghijklmnopqrstuvwxyz'[step_number - 1] }} · {{ lesson.title }} — Botfolio{% endblock %}
+{% block meta_description %}{{ step.action }}{% endblock %}
 {% block page_class %}academy academy--lesson{% endblock %}
 {% block content %}
-<nav class="academy__crumbs" aria-label="Breadcrumb"><a href="{{ url_for('learn') }}">CAD Academy</a><span aria-hidden="true">/</span><a href="{{ url_for('learn_pathway', platform=platform) }}">{{ pathway.name }}</a><span aria-hidden="true">/</span><a href="{{ url_for('learn_course', platform=platform, course_slug=course.slug) }}">{{ course.title }}</a><span aria-hidden="true">/</span><span aria-current="page">{{ lesson.title }}</span></nav>
-
-<header class="academy__hero academy__lesson-hero">
-  <p class="eyebrow">{{ pathway.name }} · {{ course.title }} · Lesson {{ lesson_number }} of {{ course.lessons|length }}</p>
-  <h1>{{ lesson.title }}</h1>
-  <p class="academy__lead">{{ lesson.summary }}</p>
-  <dl class="academy__facts academy__facts--hero">
-    <div><dt>Learning outcome</dt><dd>{{ lesson.outcome }}</dd></div>
-    <div><dt>Estimated time</dt><dd>{{ lesson.estimated_minutes }} min</dd></div>
-  </dl>
-</header>
-
-<section class="academy__section academy__card" aria-label="Lesson progress">
-  {% if current_user %}
-    <p><strong>{% if is_complete %}✓ Lesson complete{% else %}○ Lesson incomplete{% endif %}</strong></p>
-    <form method="post" action="{{ url_for('learn_completion', platform=platform, course_slug=course.slug, lesson_id=lesson.id) }}">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-      <input type="hidden" name="action" value="{{ 'incomplete' if is_complete else 'complete' }}">
-      <button class="btn btn--primary" type="submit">{{ 'Mark incomplete' if is_complete else 'Mark lesson complete' }}</button>
-    </form>
-    {% if is_complete and next_lesson %}<p><a href="{{ url_for('learn_lesson', platform=platform, course_slug=course.slug, lesson_id=next_lesson.id) }}">Continue to next lesson: {{ next_lesson.title }} →</a></p>{% endif %}
-    {% if is_complete and not next_lesson %}<p><a href="{{ url_for('learn_course', platform=platform, course_slug=course.slug) }}">Review completed course overview →</a></p>{% endif %}
-  {% else %}
-    <p><a href="{{ url_for('login', next=request.path) }}">Sign in to save your progress</a></p>
-  {% endif %}
-</section>
-
-<nav class="academy__edition" aria-label="Lesson edition">
-  <strong>Choose a platform edition</strong>
-  <a href="{{ url_for('learn_lesson', platform=platform, course_slug=course.slug, lesson_id=lesson.id) }}" aria-current="page">{{ pathway.name }} · Current edition</a>
-  {% if other_lesson %}<a href="{{ url_for('learn_lesson', platform=other_platform, course_slug=other_course.slug, lesson_id=other_lesson.id) }}">{{ other.name }} edition</a>{% endif %}
-</nav>
-
-<div class="academy__lesson-layout">
-  <aside class="academy__toc academy__card">
-    <nav aria-label="On this page">
-      <h2>On this page</h2>
-      <ol>
-        <li><a href="#relevance">FTC relevance</a></li>
-        <li><a href="#concepts">Concepts and setup</a></li>
-        <li><a href="#build">Build steps</a></li>
-        <li><a href="#checkpoints">Checkpoints</a></li>
-        <li><a href="#mistakes">Common mistakes</a></li>
-        <li><a href="#practice">Independent practice</a></li>
-        <li><a href="#self-check">Self-check</a></li>
-        <li><a href="#complete">Completion checklist</a></li>
-      </ol>
-      <a href="{{ url_for('learn_course', platform=platform, course_slug=course.slug) }}">Course overview</a>
-    </nav>
-  </aside>
-
-  <article class="academy__lesson-body">
-    <section id="relevance" class="academy__callout academy__callout--relevance" aria-labelledby="relevance-title">
-      <h2 id="relevance-title">Why this matters in FTC</h2><p>{{ lesson.ftc_relevance }}</p>
-    </section>
-
-    <section id="concepts" class="academy__section academy__card" aria-labelledby="concepts-title">
-      <h2 id="concepts-title">Concepts and setup</h2>
-      <h3>Concepts introduced</h3>
-      <ul class="academy__tag-list">{% for concept in lesson.concepts %}<li>{{ concept }}</li>{% endfor %}</ul>
-      <h3>Required setup</h3>
-      <ul>{% for item in lesson.required_setup %}<li>{{ item }}</li>{% endfor %}</ul>
-      {% if lesson.reference_specifications %}<h3>Reference specifications</h3><p>Use selected-hardware values; label anything unverified as provisional.</p><ul class="academy__compact-grid">{% for item in lesson.reference_specifications %}<li>{{ item }}</li>{% endfor %}</ul>{% endif %}
-      {% if lesson.media %}
-      <div class="academy__media-grid">
-        {% for item in lesson.media if item is mapping %}<figure class="academy__diagram"><img src="{{ url_for('static', filename=item.path) }}" alt="{{ item.alt }}"><figcaption>{{ item.caption }}</figcaption></figure>{% endfor %}
-      </div>
-      {% endif %}
-    </section>
-
-    <section id="build" class="academy__section" aria-labelledby="build-title">
-      <h2 id="build-title">Build steps</h2>
-      <ol class="academy__steps">
-        {% for step in lesson.steps %}
-        <li class="academy__card academy__step">
-          <h3>{{ step.title }}</h3>
-          <div class="academy__step-action"><strong>Do this</strong><p>{{ step.action }}</p></div>
-          <aside class="academy__callout academy__callout--reason" aria-label="Reasoning"><strong>Why it matters</strong><p>{{ step.reason }}</p></aside>
-          <aside class="academy__callout academy__callout--result" aria-label="Observable result"><strong>Look for</strong><p>{{ step.result }}</p></aside>
-          {% if step.note %}<aside class="academy__callout academy__callout--warning" aria-label="Warning"><strong>Watch out</strong><p>{{ step.note }}</p></aside>{% endif %}
-        </li>
+{% set step_label = course_number ~ '.' ~ lesson_number ~ '.' ~ 'abcdefghijklmnopqrstuvwxyz'[step_number - 1] %}
+<nav class="academy__crumbs" aria-label="Breadcrumb"><a href="{{ url_for('learn') }}">CAD Academy</a><span aria-hidden="true">/</span><a href="{{ url_for('learn_pathway', platform=platform) }}">{{ pathway.name }}</a><span aria-hidden="true">/</span><a href="{{ url_for('learn_course', platform=platform, course_slug=course.slug) }}">{{ course.title }}</a><span aria-hidden="true">/</span><span>{{ lesson.title }}</span></nav>
+<div class="academy__learning-layout">
+  <aside class="academy__learning-sidebar academy__card" aria-label="Lesson plan">
+    <p class="eyebrow">{{ pathway.name }} edition · Course {{ course_number }}</p>
+    <h2><a href="{{ url_for('learn_course', platform=platform, course_slug=course.slug) }}">{{ course.title }}</a></h2>
+    <p class="academy__sidebar-lesson">Lesson {{ lesson_number }} of {{ course.lessons|length }}<br><strong>{{ lesson.title }}</strong></p>
+    <p class="academy__note">{{ 'Lesson complete' if is_complete else 'Step ' ~ step_number ~ ' of ' ~ (lesson.steps|length) }}</p>
+    <nav aria-label="Steps in this lesson">
+      <ol class="academy__step-list">
+        {% for item in lesson.steps %}
+        {% set label = course_number ~ '.' ~ lesson_number ~ '.' ~ 'abcdefghijklmnopqrstuvwxyz'[loop.index0] %}
+        <li><a href="{{ url_for('learn_step', platform=platform, course_slug=course.slug, lesson_id=lesson.id, step_number=loop.index) }}" {% if loop.index == step_number %}aria-current="step"{% endif %}><span class="academy__step-label">{{ label }}</span><span>{{ item.title }}</span></a></li>
         {% endfor %}
       </ol>
-    </section>
-
-    <section id="checkpoints" class="academy__section academy__card" aria-labelledby="checkpoints-title">
-      <h2 id="checkpoints-title">Checkpoints</h2>
-      <ul class="academy__check-list">{% for item in lesson.checkpoints %}<li>{{ item }}</li>{% endfor %}</ul>
-    </section>
-
-    <section id="mistakes" class="academy__section academy__card" aria-labelledby="mistakes-title">
-      <h2 id="mistakes-title">Common mistakes and recovery</h2>
-      <ul>{% for item in lesson.common_mistakes %}<li>{{ item }}</li>{% endfor %}</ul>
-    </section>
-
-    <section id="practice" class="academy__section academy__callout academy__callout--practice" aria-labelledby="practice-title">
-      <h2 id="practice-title">Independent practice</h2><p>{{ lesson.practice }}</p>
-    </section>
-
-    <section id="self-check" class="academy__section academy__card" aria-labelledby="self-check-title">
-      <h2 id="self-check-title">Self-check</h2>
-      <p>Answer each question before opening the explanation.</p>
-      <div class="academy__self-check">
-        {% for item in lesson.self_check %}<details><summary>{{ item.question }}</summary><p>{{ item.answer }}</p></details>{% endfor %}
-      </div>
-    </section>
-
-    <section id="complete" class="academy__section academy__card" aria-labelledby="complete-title">
-      <h2 id="complete-title">Completion checklist</h2>
-      <ul class="academy__check-list">{% for item in lesson.completion_checklist %}<li>{{ item }}</li>{% endfor %}</ul>
-      {% if lesson.vocabulary %}<h3>Vocabulary</h3><p>{{ lesson.vocabulary|join(' · ') }}</p>{% endif %}
-      {% set placeholders = lesson.media|select('string')|list %}{% if placeholders %}<h3>Media placeholders</h3>{% for item in placeholders %}<p class="academy__resource-note">{{ item }}</p>{% endfor %}{% endif %}
-    </section>
-
-    <nav class="academy__lesson-nav" aria-label="Lesson navigation">
-      <div>{% if previous_lesson %}<span>Previous lesson</span><a href="{{ url_for('learn_lesson', platform=platform, course_slug=course.slug, lesson_id=previous_lesson.id) }}">← {{ previous_lesson.title }}</a>{% endif %}</div>
-      <a class="academy__overview-link" href="{{ url_for('learn_course', platform=platform, course_slug=course.slug) }}">Course overview</a>
-      <div class="academy__lesson-nav-next">{% if next_lesson %}<span>Next lesson</span><a href="{{ url_for('learn_lesson', platform=platform, course_slug=course.slug, lesson_id=next_lesson.id) }}">{{ next_lesson.title }} →</a>{% endif %}</div>
     </nav>
-  </article>
+    <a class="academy__back-plan" href="{{ url_for('learn_course', platform=platform, course_slug=course.slug) }}#lesson-{{ lesson.id }}">← Return to course plan</a>
+  </aside>
+  <div class="academy__learning-main" id="step-content">
+    {% if is_complete and step_number == lesson.steps|length %}
+    <section class="academy__card academy__completion-state" aria-labelledby="completion-title">
+      <p class="eyebrow">Lesson {{ lesson_number }} complete</p>
+      <h1 id="completion-title">Nice work — {{ lesson.title }} is complete.</h1>
+      <p>{{ lesson.outcome }}</p>
+      <div class="academy__actions">
+        {% if next_lesson %}<a class="btn btn--primary" href="{{ url_for('learn_step', platform=platform, course_slug=course.slug, lesson_id=next_lesson.id, step_number=1) }}">Start the next lesson</a>{% endif %}
+        <a class="btn" href="{{ url_for('learn_course', platform=platform, course_slug=course.slug) }}#lesson-{{ lesson.id }}">Return to the course plan</a>
+      </div>
+      <form method="post" action="{{ url_for('learn_completion', platform=platform, course_slug=course.slug, lesson_id=lesson.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="action" value="incomplete"><button class="academy__text-button" type="submit">Mark lesson incomplete</button></form>
+    </section>
+    {% else %}
+    <header class="academy__learning-header">
+      <p class="eyebrow">{{ pathway.name }} · Lesson {{ lesson_number }} · Step {{ step_label }}</p>
+      <h1>{{ step.title }}</h1>
+      <p class="academy__lead">{{ lesson.summary }}</p>
+      <p class="academy__note">Step {{ step_number }} of {{ lesson.steps|length }} · {{ lesson.estimated_minutes }} min lesson</p>
+    </header>
+    <article class="academy__card academy__focused-step" aria-label="Step {{ step_label }} content">
+      <section><h2>Action</h2><p>{{ step.action }}</p></section>
+      <section class="academy__callout academy__callout--reason"><h2>Why this matters</h2><p>{{ step.reason }}</p></section>
+      <section class="academy__callout academy__callout--result"><h2>Expected result</h2><p>{{ step.result }}</p></section>
+      {% if step.note %}<aside class="academy__callout academy__callout--warning"><h2>Watch out</h2><p>{{ step.note }}</p></aside>{% endif %}
+      {% if step.media %}<div class="academy__media-grid">{% for item in step.media if item is mapping %}<figure class="academy__diagram"><img src="{{ url_for('static', filename=item.path) }}" alt="{{ item.alt }}"><figcaption>{{ item.caption }}</figcaption></figure>{% endfor %}</div>{% endif %}
+    </article>
+    <nav class="academy__step-nav" aria-label="Step navigation">
+      {% if step_number > 1 %}<a class="btn" href="{{ url_for('learn_step', platform=platform, course_slug=course.slug, lesson_id=lesson.id, step_number=step_number - 1) }}">← Back</a>{% else %}<a class="btn" href="{{ url_for('learn_course', platform=platform, course_slug=course.slug) }}#lesson-{{ lesson.id }}">← Back to plan</a>{% endif %}
+      {% if step_number < lesson.steps|length %}<a class="btn btn--primary" href="{{ url_for('learn_step', platform=platform, course_slug=course.slug, lesson_id=lesson.id, step_number=step_number + 1) }}">Continue →</a>
+      {% elif current_user %}<form method="post" action="{{ url_for('learn_completion', platform=platform, course_slug=course.slug, lesson_id=lesson.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="action" value="complete"><button class="btn btn--primary" type="submit">Mark lesson complete</button></form>
+      {% else %}<a class="btn btn--primary" href="{{ url_for('login', next=request.path) }}">Sign in to mark lesson complete</a>{% endif %}
+    </nav>
+    {% if not current_user %}<p class="academy__note"><a href="{{ url_for('login', next=request.path) }}">Sign in to save your progress</a></p>{% endif %}
+    {% endif %}
+    <nav class="academy__edition" aria-label="Lesson edition"><strong>CAD edition</strong><span>{{ pathway.name }}</span>{% if other_lesson %}<a href="{{ url_for('learn_step', platform=other_platform, course_slug=other_course.slug, lesson_id=other_lesson.id, step_number=step_number) }}">View {{ other.name }} edition</a>{% endif %}</nav>
+  </div>
 </div>
 {% endblock %}
