@@ -57,6 +57,8 @@ class AcademyTests(unittest.TestCase):
                         path = base + f"/steps/{step_number}"
                         self.assertIn(f'href="{path}"', plan)
                         html = html_lib.unescape(self.client.get(path).get_data(as_text=True))
+                        self.assertIn('/static/academy.css', html)
+                        self.assertIn('/static/academy.js', html)
                         label = f"{course_number}.{lesson_number}.{chr(96 + step_number)}"
                         self.assertIn(label, html)
                         self.assertIn(step["action"], html)
@@ -91,6 +93,20 @@ class AcademyTests(unittest.TestCase):
         catalog["onshape"][0]["lessons"][0]["steps"][0]["action"] = ""
         with self.assertRaises(ValueError):
             validate_catalog(catalog)
+
+    def test_step_media_precedes_instructions_and_missing_media_is_omitted(self):
+        for platform in PATHWAYS:
+            course = CATALOG[platform][0]
+            lesson = course["lessons"][0]
+            path = f"/learn/{platform}/{course['slug']}/lessons/{lesson['id']}/steps/1"
+            self.assertNotIn('aria-label="Step media"', self.client.get(path).get_data(as_text=True))
+            media = ({"path": "images/academy/under-vs-fully-constrained.svg",
+                      "alt": "Existing sketch constraint diagram", "caption": "Diagram rendering fixture"},)
+            with patch.dict(lesson["steps"][0], {"media": media, "note": "Check dimensions before building."}):
+                html = self.client.get(path).get_data(as_text=True)
+                self.assertLess(html.index('aria-label="Step media"'), html.index('class="academy__focused-step"'))
+                self.assertIn('alt="Existing sketch constraint diagram"', html)
+                self.assertIn("Check dimensions before building.", html)
 
 
 if __name__ == "__main__":

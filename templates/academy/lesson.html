@@ -7,10 +7,14 @@
 <nav class="academy__crumbs" aria-label="Breadcrumb"><a href="{{ url_for('learn') }}">CAD Academy</a><span aria-hidden="true">/</span><a href="{{ url_for('learn_pathway', platform=platform) }}">{{ pathway.name }}</a><span aria-hidden="true">/</span><a href="{{ url_for('learn_course', platform=platform, course_slug=course.slug) }}">{{ course.title }}</a><span aria-hidden="true">/</span><span>{{ lesson.title }}</span></nav>
 <div class="academy__learning-layout">
   <aside class="academy__learning-sidebar academy__card" aria-label="Lesson plan">
+    <details class="academy__tracker" open>
+    <summary class="academy__tracker-toggle"><span><strong>Lesson {{ lesson_number }} tracker</strong><span>Step {{ step_number }} of {{ lesson.steps|length }} · {{ step.title }}</span></span><span class="academy__tracker-chevron" aria-hidden="true">⌄</span></summary>
+    <div class="academy__tracker-body">
     <p class="eyebrow">{{ pathway.name }} edition · Course {{ course_number }}</p>
     <h2><a href="{{ url_for('learn_course', platform=platform, course_slug=course.slug) }}">{{ course.title }}</a></h2>
     <p class="academy__sidebar-lesson">Lesson {{ lesson_number }} of {{ course.lessons|length }}<br><strong>{{ lesson.title }}</strong></p>
-    <p class="academy__note">{{ 'Lesson complete' if is_complete else 'Step ' ~ step_number ~ ' of ' ~ (lesson.steps|length) }}</p>
+    <p class="academy__tracker-progress">Step {{ step_number }} of {{ lesson.steps|length }}{% if is_complete %} · Lesson complete{% endif %}</p>
+    <progress class="academy__step-progress" max="{{ lesson.steps|length }}" value="{{ step_number }}" aria-label="Current step position"></progress>
     <nav aria-label="Steps in this lesson">
       <ol class="academy__step-list">
         {% for item in lesson.steps %}
@@ -20,6 +24,8 @@
       </ol>
     </nav>
     <a class="academy__back-plan" href="{{ url_for('learn_course', platform=platform, course_slug=course.slug) }}#lesson-{{ lesson.id }}">← Return to course plan</a>
+    </div>
+    </details>
   </aside>
   <div class="academy__learning-main" id="step-content">
     {% if is_complete and step_number == lesson.steps|length %}
@@ -40,12 +46,19 @@
       <p class="academy__lead">{{ lesson.summary }}</p>
       <p class="academy__note">Step {{ step_number }} of {{ lesson.steps|length }} · {{ lesson.estimated_minutes }} min lesson</p>
     </header>
-    <article class="academy__card academy__focused-step" aria-label="Step {{ step_label }} content">
-      <section><h2>Action</h2><p>{{ step.action }}</p></section>
-      <section class="academy__callout academy__callout--reason"><h2>Why this matters</h2><p>{{ step.reason }}</p></section>
-      <section class="academy__callout academy__callout--result"><h2>Expected result</h2><p>{{ step.result }}</p></section>
-      {% if step.note %}<aside class="academy__callout academy__callout--warning"><h2>Watch out</h2><p>{{ step.note }}</p></aside>{% endif %}
-      {% if step.media %}<div class="academy__media-grid">{% for item in step.media if item is mapping %}<figure class="academy__diagram"><img src="{{ url_for('static', filename=item.path) }}" alt="{{ item.alt }}"><figcaption>{{ item.caption }}</figcaption></figure>{% endfor %}</div>{% endif %}
+    {% set step_media = step.media|default(())|select('mapping')|list %}
+    {% if step_media %}
+    <div class="academy__step-media" aria-label="Step media">
+      {% for item in step_media %}
+      <figure><img src="{{ url_for('static', filename=item.path) }}" alt="{{ item.alt }}">{% if item.caption %}<figcaption>{{ item.caption }}</figcaption>{% endif %}</figure>
+      {% endfor %}
+    </div>
+    {% endif %}
+    <article class="academy__focused-step" aria-label="Step {{ step_label }} content">
+      <section class="academy__instruction academy__instruction--action"><p class="eyebrow">Your next move</p><h2>Action</h2><p>{{ step.action }}</p></section>
+      <section class="academy__instruction"><h2>Why this matters</h2><p>{{ step.reason }}</p></section>
+      <section class="academy__instruction academy__instruction--result"><h2>Expected result</h2><p>{{ step.result }}</p></section>
+      {% if step.note %}<aside class="academy__instruction academy__instruction--warning"><h2>Watch out</h2><p>{{ step.note }}</p></aside>{% endif %}
     </article>
     <nav class="academy__step-nav" aria-label="Step navigation">
       {% if step_number > 1 %}<a class="btn" href="{{ url_for('learn_step', platform=platform, course_slug=course.slug, lesson_id=lesson.id, step_number=step_number - 1) }}">← Back</a>{% else %}<a class="btn" href="{{ url_for('learn_course', platform=platform, course_slug=course.slug) }}#lesson-{{ lesson.id }}">← Back to plan</a>{% endif %}
@@ -58,4 +71,5 @@
     <nav class="academy__edition" aria-label="Lesson edition"><strong>CAD edition</strong><span>{{ pathway.name }}</span>{% if other_lesson %}<a href="{{ url_for('learn_step', platform=other_platform, course_slug=other_course.slug, lesson_id=other_lesson.id, step_number=step_number) }}">View {{ other.name }} edition</a>{% endif %}</nav>
   </div>
 </div>
+<script src="{{ url_for('static', filename='academy.js') }}" defer></script>
 {% endblock %}
