@@ -1,7 +1,41 @@
 {% extends "base.html" %}
 {% block title %}Botfolio{% endblock %}
 
+{% block head %}
+<style>
+  .judging-notice {
+    box-sizing: border-box;
+    width: min(34rem, calc(100vw - 2rem));
+    max-height: calc(100dvh - 2rem);
+    margin: auto;
+    padding: 2rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--bg-raised);
+    color: var(--text);
+    box-shadow: var(--shadow-3);
+  }
+  .judging-notice::backdrop { background: rgba(0, 0, 0, .7); }
+  .judging-notice h2 { margin-top: 0; }
+  .judging-notice p { line-height: 1.6; }
+  .judging-notice a { overflow-wrap: anywhere; }
+  .judging-notice form { margin-top: 1.5rem; }
+  html:has(.judging-notice[open]) { overflow: hidden; }
+</style>
+{% endblock %}
+
 {% block content %}
+<dialog class="judging-notice" id="judging-notice" aria-labelledby="judging-notice-title" aria-describedby="judging-notice-description">
+  <h2 id="judging-notice-title">Congressional App Challenge</h2>
+  <p id="judging-notice-description">This is a frozen version of the site with a curated set of designs and teams for the purposes of the Congressional App Challenge judging. The live site in production can be viewed here: <a href="https://botfoliohq.com/" target="_blank" rel="noopener noreferrer">https://botfoliohq.com/</a></p>
+  <form method="dialog">
+    <button class="btn btn--primary" autofocus>Continue to judging site</button>
+  </form>
+</dialog>
+<script>
+  document.getElementById('judging-notice').showModal();
+</script>
+
 <section class="hero">
   <div class="hero__copy">
     <h1>Build better robots by seeing how others built theirs.</h1>

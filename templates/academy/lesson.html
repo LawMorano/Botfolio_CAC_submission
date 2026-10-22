@@ -55,7 +55,7 @@
     </div>
     {% endif %}
     <article class="academy__focused-step" aria-label="Step {{ step_label }} content">
-      <section class="academy__instruction academy__instruction--action"><p class="eyebrow">Your next move</p><h2>Action</h2><p>{{ step.action }}</p></section>
+      <section class="academy__instruction academy__instruction--action"><p class="eyebrow">Your next move</p><h2>Action</h2><p>{{ step.action }}</p>{% if step.beginner_guide %}<p><strong>In plain words:</strong> {{ step.beginner_guide }}</p>{% endif %}</section>
       <section class="academy__instruction"><h2>Why this matters</h2><p>{{ step.reason }}</p></section>
       <section class="academy__instruction academy__instruction--result"><h2>Expected result</h2><p>{{ step.result }}</p></section>
       {% if step.note %}<aside class="academy__instruction academy__instruction--warning"><h2>Watch out</h2><p>{{ step.note }}</p></aside>{% endif %}

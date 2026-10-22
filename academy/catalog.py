@@ -2,6 +2,7 @@
 
 import re
 
+from academy.beginner_guides import add_onshape_guides
 from academy.content.parallel_plate import ENGINEERING_BRIEF, OBJECTIVES, RUBRIC, build_course as build_parallel_plate
 from academy.content.quick_start import build_course as build_quick_start
 
@@ -33,8 +34,8 @@ def _planned_course(platform, item):
 
 CATALOG = {
     platform: (
-        build_quick_start(platform, pathway["name"]),
-        build_parallel_plate(platform, pathway["name"]),
+        add_onshape_guides(build_quick_start(platform, pathway["name"])),
+        add_onshape_guides(build_parallel_plate(platform, pathway["name"])),
     )
     for platform, pathway in PATHWAYS.items()
 }

@@ -108,6 +108,17 @@ class AcademyTests(unittest.TestCase):
                 self.assertIn('alt="Existing sketch constraint diagram"', html)
                 self.assertIn("Check dimensions before building.", html)
 
+    def test_every_onshape_step_has_plain_language_guide(self):
+        for course in CATALOG["onshape"]:
+            for lesson in course["lessons"]:
+                for number, step in enumerate(lesson["steps"], 1):
+                    self.assertTrue(step.get("beginner_guide"), (lesson["id"], number))
+                    path = (f"/learn/onshape/{course['slug']}/lessons/"
+                            f"{lesson['id']}/steps/{number}")
+                    html = html_lib.unescape(self.client.get(path).get_data(as_text=True))
+                    self.assertIn("In plain words:", html)
+                    self.assertIn(step["beginner_guide"], html)
+
 
 if __name__ == "__main__":
     unittest.main()
