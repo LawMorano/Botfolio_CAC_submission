@@ -61,33 +61,6 @@
 }
 :root[data-perf="high"] .hero__copy { position: relative; z-index: 1; }
 
-/* ---- Living gradient mesh (hero.js, full tier + motion + anime.js) ----
- * Hidden until hero.js confirms it can drive the blobs, at which point it takes
- * the aurora's place. Each blob wanders independently; the whole layer drifts
- * against the pointer. If hero.js never runs, the aurora above stays. */
-.hero__mesh { display: none; }
-:root[data-perf="high"] .hero.hero-mesh-on .hero__aurora { display: none; }
-:root[data-perf="high"] .hero.hero-mesh-on .hero__mesh {
-  display: block;
-  position: absolute;
-  inset: -32% -20% -42%;
-  z-index: -1;
-  pointer-events: none;
-  filter: blur(42px) saturate(135%);
-  opacity: .8;
-  will-change: transform;
-}
-:root[data-perf="high"] .hero__mesh i {
-  position: absolute;
-  display: block;
-  border-radius: 50%;
-  will-change: transform;
-}
-:root[data-perf="high"] .hero__mesh i:nth-child(1) { top: 6%;  left: 8%;  width: 46%; height: 54%; background: radial-gradient(circle, rgba(255, 122, 61, .60), transparent 62%); }
-:root[data-perf="high"] .hero__mesh i:nth-child(2) { top: 0;   left: 56%; width: 46%; height: 52%; background: radial-gradient(circle, rgba(88, 150, 214, .52), transparent 62%); }
-:root[data-perf="high"] .hero__mesh i:nth-child(3) { top: 46%; left: 42%; width: 52%; height: 58%; background: radial-gradient(circle, rgba(78, 201, 138, .42), transparent 64%); }
-:root[data-perf="high"] .hero__mesh i:nth-child(4) { top: 38%; left: 0;   width: 42%; height: 50%; background: radial-gradient(circle, rgba(255, 176, 120, .38), transparent 64%); }
-
 @media (prefers-reduced-motion: no-preference) {
   :root[data-perf="high"] .hero__aurora {
     animation: botfolio-aurora 20s var(--ease) infinite alternate;

@@ -373,27 +373,6 @@ main.page:has(.auth--login) { max-width: none; padding: 0; }
   object-fit: contain;
 }
 
-/* The mark box stacks the flat fallback image and the animated SVG world; the
-   tier rules below reveal exactly one. The box is taller than the globe so the
-   robot head has room to rise above it. */
-.brand__mark {
-  position: relative;
-  flex: 0 0 auto;
-  display: block;
-  width: 40px;
-  height: 54px;
-}
-.brand__mark-static,
-.brand__live {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  display: block;
-}
-.brand__mark-static { width: 40px; height: 40px; object-fit: contain; }
-.brand__live { width: 40px; height: 54px; display: none; }
-
 /* The wordmark text; the island state (set by island.js on scroll) collapses
    it away and leaves the mark standing on its own. */
 .brand__word {
@@ -409,67 +388,6 @@ main.page:has(.auth--login) { max-width: none; padding: 0; }
 .topbar.is-island .brand__word { max-width: 0; opacity: 0; }
 @media (prefers-reduced-motion: reduce) {
   .brand__word { transition: none; }
-}
-
-/* The live mark animates only on the full tier with motion allowed; anything
-   else keeps the flat mark image (the robot at rest is hidden behind the
-   globe, so the image, not the SVG, is what carries the mark there). */
-@media (prefers-reduced-motion: no-preference) {
-  :root[data-perf="high"] .brand__mark-static { display: none; }
-  :root[data-perf="high"] .brand__live { display: block; }
-}
-
-.brand__live { --ll-land: #6aba5a; --ll-robot: #ff7a3d; }
-.ll-ocean { fill: #2f8bc4; }
-.ll-rim { fill: none; stroke: #0d1117; stroke-width: 1.4; opacity: .85; }
-.ll-blob { fill: var(--ll-land); }
-/* The mark's robot: an orange outline "kettlebell" head with a handle loop and
-   two solid orange eyes, matching the flat botfolio mark. */
-.ll-head { fill: none; stroke: var(--ll-robot); stroke-width: 3; }
-.ll-handle { fill: none; stroke: var(--ll-robot); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
-.ll-eye { fill: var(--ll-robot); }
-.ll-bot { transform: translateY(21px); }        /* rest: sunk behind the globe */
-/* The orbiting mini bots. */
-.ll-mini-body { fill: var(--ll-robot); }
-.ll-mini-antenna { fill: var(--ll-robot); }
-.ll-mini-eye { fill: #0d1117; }
-.ll-orbit { transform-box: view-box; transform-origin: 20px 37px; }
-
-@media (prefers-reduced-motion: no-preference) {
-  :root[data-perf="high"] .ll-land { animation: ll-spin 16s linear infinite; }
-  :root[data-perf="high"] .ll-blob { animation: ll-conquer 20s ease-in-out infinite; }
-  :root[data-perf="high"] .ll-bot  { animation: ll-rise 20s ease-in-out infinite; }
-  :root[data-perf="high"] .ll-orbit--a { animation: ll-orbit 9s linear infinite; }
-  :root[data-perf="high"] .ll-orbit--b { animation: ll-orbit 13s linear infinite reverse; }
-  /* The mini bots only fly while the machines hold the world; when it's free
-     again they vanish. In step with ll-conquer (orange at 40–55%). */
-  :root[data-perf="high"] .ll-mini { animation: ll-mini-show 20s ease-in-out infinite; }
-}
-
-/* Continents scroll behind the circular clip; the two tiles are 40 apart, so a
-   40-unit shift wraps seamlessly. */
-@keyframes ll-spin { to { transform: translateX(-40px); } }
-/* The machines take the world (green to orange), hold it, then lose it back. */
-@keyframes ll-conquer {
-  0%, 8%    { fill: var(--ll-land); }
-  40%, 55%  { fill: var(--ll-robot); }
-  87%, 100% { fill: var(--ll-land); }
-}
-/* The robot rises over the globe while the machines hold it, sinks when beaten
-   back. In step with the recolour above. */
-@keyframes ll-rise {
-  0%, 8%    { transform: translateY(21px); }
-  40%, 55%  { transform: translateY(0); }
-  87%, 100% { transform: translateY(21px); }
-}
-/* The mini bots circle the globe's centre. */
-@keyframes ll-orbit { to { transform: rotate(360deg); } }
-/* ...and are only aloft while the world is held (fade in as it's taken, out as
-   it's freed), so they never linger over a world nobody has conquered. */
-@keyframes ll-mini-show {
-  0%, 26%   { opacity: 0; }
-  38%, 55%  { opacity: 1; }
-  70%, 100% { opacity: 0; }
 }
 
 .global-search { position:relative; display:flex; align-items:center; flex:0 1 470px; max-width:470px; min-width:240px; margin:0 0 0 auto; transition:flex-basis .5s var(--ease), max-width .5s var(--ease), min-width .5s var(--ease); }
@@ -568,9 +486,6 @@ main.page:has(.auth--login) { max-width: none; padding: 0; }
 @media (max-width: 680px) {
   .topbar { gap:1rem; padding:.75rem 1rem; }
   .brand { height:48px; gap:.4rem; }
-  .brand__mark { width:34px; height:46px; }
-  .brand__mark-static { width:34px; height:34px; }
-  .brand__live { width:34px; height:46px; }
   .brand__word { height:22px; max-width:124px; }
   .topbar__nav { order:3; width:100%; justify-content:space-between; gap:.55rem; overflow-x:auto; }
   .global-search { order:4; min-width:0; }
