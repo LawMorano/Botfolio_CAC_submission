@@ -31,12 +31,9 @@
   --raised:    linear-gradient(180deg, #18202b, var(--bg-raised));
   --panel:     linear-gradient(135deg, #1b222d, #11161e);
 
-  /* Chrome surfaces that used to be hardcoded rgba() so they can flip with the
-     theme: the translucent topbar, its scrolled state, floating inputs and the
+  /* Chrome surfaces shared by the translucent topbar, floating inputs and
      glass menus (search results, command palette). */
   --topbar-bg:       rgba(21, 27, 36, .72);
-  --topbar-bg-stuck: rgba(14, 19, 26, .88);
-  --topbar-border-stuck: #2c3644;
   --input-float:     rgba(13, 17, 23, .88);
   --glass:           rgba(21, 27, 36, .98);
   --border-strong:   color-mix(in srgb, var(--border) 70%, var(--text) 12%);
@@ -284,71 +281,18 @@ main.page:has(.auth--login) { max-width: none; padding: 0; }
   display: flex;
   align-items: center;
   gap: 1.5rem;
-  /* An explicit full-width max-width and auto side margins at rest are what let
-     the island morph *animate*: max-width interpolates 100% -> pill width and the
-     auto margins recompute every frame so the bar glides to centre instead of
-     snapping (you cannot transition from `none`/`0` margins to a fixed pill). */
-  max-width: 100%;
-  margin-inline: auto;
   padding: .85rem 1.5rem;
   background: var(--topbar-bg);
   backdrop-filter: blur(16px) saturate(140%);
   -webkit-backdrop-filter: blur(16px) saturate(140%);
-  /* All four borders exist at rest (three transparent) so the island morph only
-     recolours them rather than growing a border, which is what used to snap. */
-  border: 1px solid transparent;
-  border-bottom-color: var(--border);
+  border-bottom: 1px solid var(--border);
   flex-wrap: wrap;
-  transition: background .45s var(--ease), box-shadow .45s var(--ease),
-              border-color .45s var(--ease), max-width .5s var(--ease),
-              padding .5s var(--ease), border-radius .5s var(--ease),
-              gap .5s var(--ease), top .5s var(--ease), margin .5s var(--ease);
-}
-
-/* Set by reveal.js once the page has scrolled: the bar lifts off the content
-   instead of sitting on it. */
-.topbar.is-stuck {
-  background: var(--topbar-bg-stuck);
-  border-bottom-color: var(--topbar-border-stuck);
-  box-shadow: var(--shadow-2);
-}
-
-/* Dynamic island: past a scroll threshold, island.js (high tier + motion only)
-   detaches the bar into a floating centred pill. The wordmark collapses to the
-   bot+globe mark (see .brand rules), the search shrinks, and on tighter widths
-   the nav folds away — the essentials condense the way iOS's island does. */
-.topbar.is-island {
-  top: .55rem;
-  /* Split out of a min() so it interpolates from the rest `max-width: 100%`:
-     a side gutter on narrow screens, capped to a centred pill on wide ones. */
-  max-width: calc(100% - 1.5rem);
-  margin: .55rem auto;
-  padding: .4rem .65rem;
-  gap: .85rem;
-  border-color: var(--border-strong);
-  border-radius: 999px;
-  background: var(--topbar-bg-stuck);
-  box-shadow: var(--shadow-3);
-  flex-wrap: nowrap;
-}
-@media (min-width: 63rem) {
-  .topbar.is-island { max-width: 61.25rem; }
-}
-.topbar.is-island .topbar__nav { gap: .85rem; }
-.topbar.is-island .global-search { flex-basis: 260px; min-width: 46px; max-width: 320px; margin-left: auto; }
-.topbar.is-island .global-search input { min-height: 40px; box-shadow: none; }
-/* On mid widths the pill can't hold the full nav; fold it away there. */
-@media (max-width: 1080px) {
-  .topbar.is-island .topbar__nav { display: none; }
-}
-@media (prefers-reduced-motion: reduce) {
-  .topbar { transition: background .45s var(--ease), box-shadow .45s var(--ease), border-color .45s var(--ease); }
 }
 
 /* Safari on older iOS and Firefox without the pref: no blur, so the bar has to
    be opaque or the text underneath shows through. */
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  .topbar, .topbar.is-stuck, .topbar.is-island { background: var(--bg-raised); }
+  .topbar { background: var(--bg-raised); }
 }
 
 .brand {
@@ -373,8 +317,7 @@ main.page:has(.auth--login) { max-width: none; padding: 0; }
   object-fit: contain;
 }
 
-/* The wordmark text; the island state (set by island.js on scroll) collapses
-   it away and leaves the mark standing on its own. */
+/* The wordmark remains visible while the header is sticky. */
 .brand__word {
   flex: 0 0 auto;
   width: auto;
@@ -382,12 +325,6 @@ main.page:has(.auth--login) { max-width: none; padding: 0; }
   max-width: 155px;
   object-fit: contain;
   opacity: 1;
-  transition: opacity .35s var(--ease), max-width .5s var(--ease);
-}
-.topbar.is-island .brand { gap: 0; }
-.topbar.is-island .brand__word { max-width: 0; opacity: 0; }
-@media (prefers-reduced-motion: reduce) {
-  .brand__word { transition: none; }
 }
 
 .global-search { position:relative; display:flex; align-items:center; flex:0 1 470px; max-width:470px; min-width:240px; margin:0 0 0 auto; transition:flex-basis .5s var(--ease), max-width .5s var(--ease), min-width .5s var(--ease); }
@@ -1486,13 +1423,6 @@ body:has(.viewer-modal[open]) { overflow:hidden; }
   color: var(--text-dim);
   font-size: .85rem;
 }
-.footer__controls {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: center;
-  gap: .6rem 1.6rem;
-}
 
 /* ------------------------------------------------ enhanced design detail */
 .detail-card {
@@ -1723,30 +1653,7 @@ html.reveal-on .footer { animation: botfolio-fade-in 1s var(--ease-out) both; }
 }
 
 /* ============================================================ power features
-   Command palette, back-to-top, reading progress and the shortcuts overlay.
-   All theme-aware (tokens only) and reduced-motion-safe. island.js gates the
-   scroll-driven pieces by tier; the palette is a utility and loads everywhere. */
-
-/* --- Reading-progress bar: a thin accent line pinned to the very top edge.
-   Only shown once island.js flags the high tier (has-reading-progress). --- */
-.reading-progress {
-  position: fixed;
-  inset: 0 0 auto 0;
-  height: 3px;
-  z-index: 60;
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity .3s var(--ease);
-}
-:root.has-reading-progress .reading-progress { opacity: 1; }
-.reading-progress__fill {
-  display: block;
-  height: 100%;
-  transform: scaleX(0);
-  transform-origin: 0 50%;
-  background: linear-gradient(90deg, var(--accent-dim), var(--accent));
-  box-shadow: 0 0 12px -2px var(--accent);
-}
+   Command palette, back-to-top, and the shortcuts overlay. */
 
 /* --- Back-to-top: a floating glass disc that rises in past a scroll depth. --- */
 .to-top {
@@ -1902,7 +1809,6 @@ html.reveal-on .footer { animation: botfolio-fade-in 1s var(--ease-out) both; }
 @media (prefers-reduced-motion: reduce) {
   .cmdk, .cmdk__dialog, .shortcuts, .shortcuts__card, .to-top { transition: opacity .12s linear; }
   .cmdk__dialog, .shortcuts__card, .to-top.is-visible { transform: none; }
-  .reading-progress { display: none; }
 }
 .founding-callout { display:flex; align-items:center; justify-content:space-between; gap:1rem; margin-block:1.5rem; }
 /* The Founding 50 island wears the same gold as the Founding 50 page itself. */

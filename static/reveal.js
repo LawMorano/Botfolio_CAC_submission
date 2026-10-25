@@ -1,5 +1,5 @@
 /*
- * Scroll-in reveals and the sticky-topbar shadow.
+ * Scroll-in reveals.
  *
  * The hidden state lives in style.css under `html.reveal-on`, which the inline
  * script in base.html sets before the first paint. All this file does is
@@ -69,22 +69,6 @@ function mountReveals() {
   for (const el of elements) observer.observe(el);
 }
 
-/* The bar only earns its shadow once there is something underneath it. */
-function mountStickyBar() {
-  const bar = document.querySelector('.topbar');
-  if (!bar) return;
-
-  // A sentinel at the top of the document is cheaper and smoother than
-  // listening to scroll: no handler runs while the page is being scrolled.
-  const sentinel = document.createElement('div');
-  sentinel.style.cssText = 'position:absolute;top:0;left:0;width:1px;height:1px;pointer-events:none';
-  document.body.prepend(sentinel);
-
-  new IntersectionObserver(([entry]) => {
-    bar.classList.toggle('is-stuck', !entry.isIntersecting);
-  }).observe(sentinel);
-}
-
 function start() {
   // reveal-on is only set when motion is welcome and the APIs exist; without it
   // nothing is hidden in the first place and there is nothing to do.
@@ -92,7 +76,6 @@ function start() {
 
   try {
     mountReveals();
-    mountStickyBar();
   } catch (err) {
     // Never let a failure here leave the page blank.
     revealAll();

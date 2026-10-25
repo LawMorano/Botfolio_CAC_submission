@@ -2,13 +2,12 @@
  *
  * Botfolio serves the same markup to everyone, but two visual tiers:
  *   [data-perf="high"]  full effects — animated hero aurora, gradient text,
- *                       glass depth, pointer-tracking card glow, button shine.
+ *                       glass depth and pointer-tracking card glow.
  *   [data-perf="low"]   a fast, flat version — blur and animated backgrounds
  *                       stripped — so low-end and mobile devices stay smooth.
  *
- * The tier is chosen before first paint in base.html (device capability, with a
- * user override remembered in localStorage). Everything expensive lives behind
- * the high-tier selector; the low-tier block below actively removes cost the
+ * The tier is chosen before first paint in base.html from device capability.
+ * Everything expensive lives behind the high-tier selector; the low-tier block below actively removes cost the
  * base theme would otherwise pay.
  */
 
@@ -79,22 +78,6 @@
   }
 }
 
-/* ---- Primary buttons: a light sweep passes across on hover ---- */
-:root[data-perf="high"] .btn--primary { position: relative; overflow: hidden; }
-:root[data-perf="high"] .btn--primary > * { position: relative; z-index: 1; }
-:root[data-perf="high"] .btn--primary::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(115deg, transparent 32%, rgba(255, 255, 255, .38) 50%, transparent 68%);
-  transform: translateX(-130%);
-  pointer-events: none;
-}
-@media (prefers-reduced-motion: no-preference) {
-  :root[data-perf="high"] .btn--primary::after { transition: transform .6s var(--ease-out); }
-  :root[data-perf="high"] .btn--primary:hover::after { transform: translateX(130%); }
-}
-
 /* ---- Cards: a soft accent glow that follows the pointer ----
  * interactive.js feeds --mx/--my; without JS it rests at the centre. */
 :root[data-perf="high"] .card::before {
@@ -133,44 +116,13 @@
   vertical-align: middle;
 }
 
-/* ================================================ visual-detail toggle === */
-
-.perf-toggle {
-  display: inline-flex;
-  align-items: center;
-  gap: .35rem;
-  margin-top: .9rem;
-  font-size: .82rem;
-  color: var(--text-dim);
-}
-.perf-toggle__label { margin-right: .15rem; }
-.perf-toggle button {
-  padding: .22rem .6rem;
-  background: var(--bg-input);
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  color: var(--text-dim);
-  font: inherit;
-  font-size: .82rem;
-  cursor: pointer;
-  transition: color .25s var(--ease), border-color .25s var(--ease), background .25s var(--ease);
-}
-.perf-toggle button:hover { color: var(--text); border-color: var(--text-dim); }
-.perf-toggle button[aria-pressed="true"] {
-  color: #1a0f08;
-  background: linear-gradient(180deg, #ff8d57, var(--accent));
-  border-color: var(--accent);
-  font-weight: 600;
-}
-
 /* ==================================================== craft polish (full) ===
  * The layer that ties the full tier together — small, considered touches that
  * read as "someone cared", never as noise. All high-tier only; the spinning
  * bits are additionally gated to prefers-reduced-motion. Nothing here is load-
  * bearing: strip every rule below and the site is still complete, just flatter.
  * (Deliberately does NOT restate what the base theme already does — the nav
- * underline, primary-button shine, card pointer-glow and image zoom all live in
- * style.css / earlier in this file.) */
+ * underline, card pointer-glow and image zoom live in style.css or above.) */
 
 /* ---- Cards: an accent ring resolves out of the border on hover ----
  * A conic gradient is painted into the border box (via the padding-box/border-
@@ -218,8 +170,7 @@
   box-shadow: var(--shadow-2), inset 0 1px 0 rgba(255, 255, 255, .06);
 }
 
-/* ---- Primary buttons: an accent-tinted lift-shadow warms the hover ----
- * Complements the existing light-sweep without touching its gradient fill. */
+/* ---- Primary buttons: an accent-tinted lift-shadow warms the hover ---- */
 :root[data-perf="high"] .btn--primary:hover {
   box-shadow: 0 8px 24px -8px rgba(255, 122, 61, .55);
 }

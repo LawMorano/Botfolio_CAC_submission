@@ -62,30 +62,20 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='enhance.css') }}">
   {% if request.endpoint and request.endpoint.rpartition('.')[2] in ('learn', 'learn_pathway', 'learn_course', 'learn_lesson', 'learn_step', 'learn_my_progress') %}<link rel="stylesheet" href="{{ url_for('static', filename='academy.css') }}">{% endif %}
 
-  {# Picks the visual tier before first paint so the page never flashes the
-     wrong one. A saved override ("high"/"low") wins; otherwise we weigh a few
-     capability signals and default mobile / weak / data-saving devices to the
-     lightweight "low" tier. enhance.css keys every heavy effect off data-perf. #}
+  {# Pick the visual tier before first paint from device capability. #}
   <script>
     (function () {
-      var root = document.documentElement, saved = null;
-      try { saved = localStorage.getItem('botfolio-perf'); } catch (e) {}
-      var mode = (saved === 'high' || saved === 'low') ? saved : 'auto', tier = mode;
-      if (mode === 'auto') {
-        var score = 0;
-        try {
-          if (matchMedia('(prefers-reduced-motion: reduce)').matches) score += 2;
-          if (matchMedia('(pointer: coarse)').matches) score += 1;
-          if (matchMedia('(max-width: 900px)').matches) score += 1;
-          var conn = navigator.connection;
-          if (conn && (conn.saveData || /(^|\b)(slow-2g|2g|3g)$/.test(conn.effectiveType || ''))) score += 2;
-          if (typeof navigator.deviceMemory === 'number' && navigator.deviceMemory < 4) score += 1;
-          if (typeof navigator.hardwareConcurrency === 'number' && navigator.hardwareConcurrency < 4) score += 1;
-        } catch (e) {}
-        tier = score >= 2 ? 'low' : 'high';
-      }
-      root.dataset.perf = tier;
-      root.dataset.perfMode = mode;
+      var score = 0;
+      try {
+        if (matchMedia('(prefers-reduced-motion: reduce)').matches) score += 2;
+        if (matchMedia('(pointer: coarse)').matches) score += 1;
+        if (matchMedia('(max-width: 900px)').matches) score += 1;
+        var conn = navigator.connection;
+        if (conn && (conn.saveData || /(^|\b)(slow-2g|2g|3g)$/.test(conn.effectiveType || ''))) score += 2;
+        if (typeof navigator.deviceMemory === 'number' && navigator.deviceMemory < 4) score += 1;
+        if (typeof navigator.hardwareConcurrency === 'number' && navigator.hardwareConcurrency < 4) score += 1;
+      } catch (e) {}
+      document.documentElement.dataset.perf = score >= 2 ? 'low' : 'high';
     })();
   </script>
 
@@ -112,18 +102,13 @@
   </script>
   <script src="{{ url_for('static', filename='reveal.js') }}" defer></script>
   <script src="{{ url_for('static', filename='global-search.js') }}" defer></script>
-  <script src="{{ url_for('static', filename='perf-tier.js') }}" defer></script>
-  <script src="{{ url_for('static', filename='island.js') }}" defer></script>
+  <script src="{{ url_for('static', filename='back-to-top.js') }}" defer></script>
   <script src="{{ url_for('static', filename='command-palette.js') }}" defer></script>
   <script src="{{ url_for('static', filename='shortcuts.js') }}" defer></script>
   <script src="{{ url_for('static', filename='interactive.js') }}" defer></script>
   {% block head %}{% endblock %}
 </head>
 <body>
-
-{# Scroll-driven reading-progress bar. Decorative + high-tier only: island.js
-   leaves it collapsed on the lite tier / reduced motion, and it is aria-hidden. #}
-<div class="reading-progress" data-reading-progress aria-hidden="true"><span class="reading-progress__fill"></span></div>
 
 <header class="topbar">
   <a class="brand" href="{{ url_for('index') }}" aria-label="Botfolio home">
@@ -189,14 +174,6 @@
   <p>&copy; 2026 Botfolio LLC. All rights reserved.</p>
   <p><a href="{{ url_for('help') }}">Help</a> | <a href="{{ url_for('terms') }}">Terms of Use</a> | <a href="{{ url_for('privacy') }}">Privacy Policy</a> | <a href="{{ url_for('community_rules') }}">Community Rules</a> | <a href="{{ url_for('copyright_policy') }}">Copyright &amp; Takedowns</a> | <a href="{{ url_for('report_content') }}">Report Content</a> | <a href="{{ url_for('contact') }}">Contact</a></p>
   <p>Botfolio is an independent educational platform and is not affiliated with, endorsed by, sponsored by, or operated by FIRST&reg;, FIRST Tech Challenge&reg;, VEX Robotics&reg;, or any other robotics competition organization referenced on this site.</p>
-  <div class="footer__controls">
-    <div class="perf-toggle" data-perf-toggle role="group" aria-label="Visual detail level">
-      <span class="perf-toggle__label">Visual detail</span>
-      <button type="button" data-perf-set="auto">Auto</button>
-      <button type="button" data-perf-set="high">Full</button>
-      <button type="button" data-perf-set="low">Lite</button>
-    </div>
-  </div>
 </footer>
 
 {# Command palette (⌘K / Ctrl-K). A utility, so it loads on every tier; it
@@ -219,7 +196,7 @@
   </div>
 </div>
 
-{# Floating back-to-top control. All tiers; island.js reveals it past a
+{# Floating back-to-top control. back-to-top.js reveals it past a
    scroll threshold and smooth-scrolls (respecting reduced motion). #}
 <button class="to-top" type="button" data-to-top aria-label="Back to top" hidden>
   <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
