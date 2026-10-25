@@ -60,7 +60,7 @@
 
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='20261025-no-hover-lift') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='enhance.css', v='20261025-no-hover-lift') }}">
-  {% if request.endpoint and request.endpoint.rpartition('.')[2] in ('learn', 'learn_pathway', 'learn_course', 'learn_lesson', 'learn_step', 'learn_my_progress') %}<link rel="stylesheet" href="{{ url_for('static', filename='academy.css') }}">{% endif %}
+  {% if request.endpoint and request.endpoint.rpartition('.')[2] in ('learn', 'learn_pathway', 'learn_course', 'learn_lesson', 'learn_step', 'learn_my_progress') %}<link rel="stylesheet" href="{{ url_for('static', filename='academy.css', v='20261025-clear-steps') }}">{% endif %}
 
   {# Pick the visual tier before first paint from device capability. #}
   <script>

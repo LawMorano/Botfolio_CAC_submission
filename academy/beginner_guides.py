@@ -83,7 +83,7 @@ ONSHAPE_GUIDES = {
         "A Fastened mate locks two items together. Use it for hardware that should move as one piece with its support.",
         "A Revolute mate lets a part rotate around one axis. Drag the wheel or shaft to confirm it turns without sliding sideways.",
         "A section view shows a cut through the model. Interference detection highlights parts occupying the same space; inspect each result.",
-        "Pretend you are repairing the robot. List which bolts and parts come off first, and check that a tool can reach them.",
+        "Plan the repair sequence. List which bolts and parts come off first, and check that a tool can reach them.",
         "Widen the wheel model, then move internal parts as needed without growing the outer limit. Measure and record the smallest remaining gap.",
     ),
 }

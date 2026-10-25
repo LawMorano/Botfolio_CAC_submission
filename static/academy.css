@@ -142,6 +142,7 @@
 .academy__instruction--action { border-top:3px solid var(--accent); background:linear-gradient(120deg,rgba(255,122,61,.07),transparent 70%),var(--bg-raised); }
 .academy__instruction--action h2 { font-size:1.4rem; }
 .academy__instruction--action p:not(.eyebrow) { font-size:1.1rem; color:var(--text); }
+.academy__instruction--action p:not(.eyebrow) + p { margin-top:.85rem; }
 .academy__instruction .eyebrow { color:var(--accent); font-size:.68rem; margin-bottom:.6rem; }
 .academy__instruction--result h2 { color:var(--good); }
 .academy__instruction--warning { border-left:3px solid var(--accent); }
