@@ -2,7 +2,7 @@
  *
  * Botfolio serves the same markup to everyone, but two visual tiers:
  *   [data-perf="high"]  full effects — animated hero aurora, gradient text,
- *                       glass depth and pointer-tracking card glow.
+ *                       and glass depth.
  *   [data-perf="low"]   a fast, flat version — blur and animated backgrounds
  *                       stripped — so low-end and mobile devices stay smooth.
  *
@@ -26,16 +26,8 @@
 }
 :root[data-perf="low"] .card,
 :root[data-perf="low"] .how__steps li {
-  transition: border-color .18s ease, box-shadow .18s ease;
+  transition: border-color .18s ease;
 }
-/* Keep colour/border feedback, but skip the transform + image zoom + deep
- * shadow that force a repaint on every hover. */
-:root[data-perf="low"] .card-slot:hover .card,
-:root[data-perf="low"] .how__steps li:hover {
-  transform: none;
-  box-shadow: var(--shadow-1);
-}
-:root[data-perf="low"] .card-slot:hover .card__image img { transform: none; }
 
 /* ================================================================= FULL ===
  * Everything below only applies to the high tier. */
@@ -78,25 +70,6 @@
   }
 }
 
-/* ---- Cards: a soft accent glow that follows the pointer ----
- * interactive.js feeds --mx/--my; without JS it rests at the centre. */
-:root[data-perf="high"] .card::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  border-radius: inherit;
-  background: radial-gradient(240px circle at var(--mx, 50%) var(--my, 50%),
-              rgba(255, 122, 61, .20), transparent 62%);
-  opacity: 0;
-  transition: opacity .4s var(--ease);
-  pointer-events: none;
-}
-:root[data-perf="high"] .card-slot:hover .card::before { opacity: 1; }
-/* Keep the real content above the glow layer. */
-:root[data-perf="high"] .card__image,
-:root[data-perf="high"] .card__body { position: relative; z-index: 1; }
-
 /* ---- Glass search panel gets a touch more depth on the full tier ---- */
 :root[data-perf="high"] .global-search__results {
   backdrop-filter: blur(14px) saturate(140%);
@@ -116,40 +89,7 @@
   vertical-align: middle;
 }
 
-/* ==================================================== craft polish (full) ===
- * The layer that ties the full tier together — small, considered touches that
- * read as "someone cared", never as noise. All high-tier only; the spinning
- * bits are additionally gated to prefers-reduced-motion. Nothing here is load-
- * bearing: strip every rule below and the site is still complete, just flatter.
- * (Deliberately does NOT restate what the base theme already does — the nav
- * underline, card pointer-glow and image zoom live in style.css or above.) */
-
-/* ---- Cards: an accent ring resolves out of the border on hover ----
- * A conic gradient is painted into the border box (via the padding-box/border-
- * box mask) only while hovered, and slowly rotates. @property lets the angle
- * animate; where it is unsupported the `from` angle falls back to 0deg and the
- * ring is simply static — so this degrades to a tasteful fixed gradient edge. */
-@property --botfolio-ring {
-  syntax: "<angle>";
-  initial-value: 0deg;
-  inherits: false;
-}
-:root[data-perf="high"] .card {
-  transition: transform .55s var(--ease-out), border-color .45s var(--ease),
-              box-shadow .55s var(--ease-out);
-}
-:root[data-perf="high"] .card-slot:hover .card {
-  /* Hand the 1px edge to the gradient; the raised fill keeps the interior. */
-  border-color: transparent;
-  background:
-    linear-gradient(var(--raised), var(--raised)) padding-box,
-    conic-gradient(from var(--botfolio-ring),
-      var(--accent), #5896d6 34%, #4ec98a 62%, var(--accent)) border-box;
-}
-@media (prefers-reduced-motion: no-preference) {
-  :root[data-perf="high"] .card-slot:hover .card { animation: botfolio-ring-spin 5s linear infinite; }
-}
-@keyframes botfolio-ring-spin { to { --botfolio-ring: 360deg; } }
+/* ==================================================== craft polish (full) === */
 
 /* ---- Section heads: a short accent bar anchors the divider on the left ---- */
 :root[data-perf="high"] .section-head { position: relative; }
@@ -168,9 +108,4 @@
  * Inset shadow, so it respects the radius and never clips content. */
 :root[data-perf="high"] .panel {
   box-shadow: var(--shadow-2), inset 0 1px 0 rgba(255, 255, 255, .06);
-}
-
-/* ---- Primary buttons: an accent-tinted lift-shadow warms the hover ---- */
-:root[data-perf="high"] .btn--primary:hover {
-  box-shadow: 0 8px 24px -8px rgba(255, 122, 61, .55);
 }

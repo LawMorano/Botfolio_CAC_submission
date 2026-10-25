@@ -343,24 +343,11 @@ main.page:has(.auth--login) { max-width: none; padding: 0; }
 .global-search__empty { margin:0; padding:1rem; color:var(--text-dim); text-align:center; }
 
 .topbar__nav { display: flex; gap: 1.1rem; }
-/* An underline that grows from the left rather than appearing all at once. */
 .topbar__nav a {
-  position: relative;
-  padding-bottom: 2px;
   color: var(--text-dim);
-}
-.topbar__nav a::after {
-  content: "";
-  position: absolute;
-  left: 0; right: 0; bottom: 0;
-  height: 1px;
-  background: var(--accent);
-  transform: scaleX(0);
-  transform-origin: left;
-  transition: transform .45s var(--ease-out);
+  transition: color .2s var(--ease);
 }
 .topbar__nav a:hover { color: var(--text); text-decoration: none; }
-.topbar__nav a:hover::after { transform: scaleX(1); }
 
 
 
@@ -442,17 +429,14 @@ main.page:has(.auth--login) { max-width: none; padding: 0; }
   font-size: .92rem;
   letter-spacing: .005em;
   cursor: pointer;
-  transition: transform .4s var(--ease), border-color .4s var(--ease),
-              background .4s var(--ease), color .4s var(--ease);
+  transition: border-color .2s var(--ease), background .2s var(--ease), color .2s var(--ease);
 }
 .btn:hover {
   border-color: var(--text-dim);
-  transform: translateY(-1px);
+  background: #202a36;
   text-decoration: none;
 }
-/* Settle back under the cursor so a click feels like it lands on something. */
-.btn:active { transform: translateY(0); transition-duration: .08s; }
-.btn:disabled { opacity: .45; cursor: not-allowed; transform: none; box-shadow: none; }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
 
 .btn--primary {
   background: linear-gradient(180deg, #ff8d57, var(--accent));
@@ -461,8 +445,8 @@ main.page:has(.auth--login) { max-width: none; padding: 0; }
   font-weight: 600;
 }
 .btn--primary:hover {
-  background: linear-gradient(180deg, var(--accent), var(--accent-dim));
-  border-color: var(--accent-dim);
+  background: linear-gradient(180deg, #ff9b67, #ff874b);
+  border-color: #ff955c;
 }
 
 .btn--quiet { background: transparent; color: var(--text-dim); }
@@ -649,13 +633,10 @@ textarea { resize: vertical; }
   border-radius: var(--radius);
   padding: 1.4rem;
   box-shadow: var(--shadow-1);
-  transition: transform .55s var(--ease-out), border-color .45s var(--ease),
-              box-shadow .55s var(--ease-out);
+  transition: border-color .2s var(--ease);
 }
 .how__steps li:hover {
-  transform: translateY(-4px);
   border-color: rgba(255, 122, 61, .35);
-  box-shadow: var(--shadow-2);
 }
 .how__steps li::before {
   content: counter(step);
@@ -724,8 +705,7 @@ textarea { resize: vertical; }
   overflow: hidden;
   color: var(--text);
   box-shadow: var(--shadow-1);
-  transition: transform .55s var(--ease-out), border-color .45s var(--ease),
-              box-shadow .55s var(--ease-out);
+  transition: border-color .2s var(--ease);
 }
 /* The highlight pass, laid over the whole card so it catches the image too. */
 .card::after {
@@ -736,24 +716,17 @@ textarea { resize: vertical; }
   background: var(--sheen);
   pointer-events: none;
 }
-/* The slot is the grid cell and never moves; the card lifts inside it. Keying
-   the lift off the slot's hover (not the card's own) keeps the pointer target
-   stationary, so hovering at the card's edge can't flicker the lift on/off. */
+/* Keep the card stationary and signal hover with a border color change. */
 .card-slot { display: block; }
 .card-slot:hover .card {
-  transform: translateY(-6px);
   border-color: rgba(255, 122, 61, .45);
-  box-shadow: var(--shadow-3);
   text-decoration: none;
 }
 
 .card__image { position: relative; aspect-ratio: 16 / 11; background: #131820; overflow: hidden; }
 .card__image img {
   width: 100%; height: 100%; object-fit: cover; display: block;
-  /* Slower than the lift, so the image drifts rather than snaps. */
-  transition: transform .9s var(--ease-out);
 }
-.card-slot:hover .card__image img { transform: scale(1.055); }
 .card__body { padding: .75rem .9rem .85rem; }
 .card__body h3 { margin: 0 0 .2rem; font-size: 1rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .card__meta { margin: 0; color: var(--text-dim); font-size: .84rem; }
@@ -1032,19 +1005,6 @@ body:has(.viewer-modal[open]) { overflow:hidden; }
   box-shadow: var(--shadow-2);
 }
 
-/* Hovering a section box (not a card, not a design) reads as pressing it down:
-   it eases in a little and the shadow turns inward. High tier + motion only, so
-   the lite tier and reduced-motion stay perfectly still. */
-@media (prefers-reduced-motion: no-preference) {
-  :root[data-perf="high"] .panel {
-    transition: transform .25s var(--ease-out), box-shadow .25s var(--ease-out);
-  }
-  :root[data-perf="high"] .panel:hover {
-    transform: translateY(2px);
-    box-shadow: inset 0 2px 12px rgba(0, 0, 0, .35), 0 1px 0 rgba(255, 255, 255, .02);
-  }
-}
-
 /* Admin design controls: stack the label, reason box, and buttons with real
    gaps so the buttons never sit flush against the text box. */
 .design-admin-controls { display:flex; flex-direction:column; gap:.7rem; }
@@ -1145,8 +1105,8 @@ body:has(.viewer-modal[open]) { overflow:hidden; }
 .design-stats { display:flex; flex-wrap:wrap; gap:1rem; margin:.75rem 0; }
 .design-actions { display:flex; align-items:center; gap:.65rem; flex-wrap:wrap; margin:.9rem 0 1.1rem; }
 .design-actions form { margin:0; }
-.like-button { display:inline-flex; align-items:center; justify-content:center; gap:.45rem; min-height:42px; padding:.55rem .9rem; border:1px solid var(--border); border-radius:999px; background:var(--bg-input); color:var(--text); font:inherit; font-weight:700; line-height:1; cursor:pointer; text-decoration:none; transition:border-color .2s var(--ease),background .2s var(--ease),color .2s var(--ease),transform .2s var(--ease); }
-.like-button:hover { border-color:#ff6680; color:#ff8da0; background:rgba(255,82,112,.08); text-decoration:none; transform:translateY(-1px); }
+.like-button { display:inline-flex; align-items:center; justify-content:center; gap:.45rem; min-height:42px; padding:.55rem .9rem; border:1px solid var(--border); border-radius:999px; background:var(--bg-input); color:var(--text); font:inherit; font-weight:700; line-height:1; cursor:pointer; text-decoration:none; transition:border-color .2s var(--ease),background .2s var(--ease),color .2s var(--ease); }
+.like-button:hover { border-color:#ff6680; color:#ff8da0; background:rgba(255,82,112,.08); text-decoration:none; }
 .like-button__heart { color:#ff6680; font-size:1.35rem; line-height:.8; }
 .like-button--liked { border-color:#ff6680; background:rgba(255,82,112,.14); color:#ff9bad; }
 .profile-hero.team-hero { display:block; padding:0; overflow:hidden; }
@@ -1168,8 +1128,8 @@ body:has(.viewer-modal[open]) { overflow:hidden; }
    follows the screen: on the wide (page--wide) teams page it fits more cards per
    row as the monitor grows and collapses to one on a phone — no fixed breakpoints. */
 .team-directory-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:1rem; margin:1.25rem 0; }
-.team-directory-card { display:flex; flex-direction:column; min-width:0; overflow:hidden; border:1px solid var(--border); border-radius:var(--radius); background:var(--bg-raised); color:var(--text); box-shadow:var(--shadow-1); transition:transform .2s var(--ease),border-color .2s var(--ease); }
-.team-directory-card:hover { transform:translateY(-3px); border-color:var(--accent); text-decoration:none; }
+.team-directory-card { display:flex; flex-direction:column; min-width:0; overflow:hidden; border:1px solid var(--border); border-radius:var(--radius); background:var(--bg-raised); color:var(--text); box-shadow:var(--shadow-1); transition:border-color .2s var(--ease); }
+.team-directory-card:hover { border-color:var(--accent); text-decoration:none; }
 .team-directory-card__logo { display:grid; place-items:center; aspect-ratio:16/7; padding:.65rem; background:linear-gradient(135deg,var(--bg-input),#202a38); overflow:hidden; }
 .team-directory-card__logo img { width:100%; height:100%; object-fit:contain; object-position:center; }
 .team-directory-card__logo span { display:grid; place-items:center; width:76px; height:76px; border-radius:20px; background:var(--accent-dim); color:#fff; font-size:2rem; font-weight:900; }
@@ -1236,8 +1196,8 @@ body:has(.viewer-modal[open]) { overflow:hidden; }
 .onboarding-notice p { margin:0; }
 .onboarding-notice p + p { margin-top:.35rem; }
 .onboarding-choices { display:grid; gap:.75rem; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); margin-top:.5rem; }
-.onboarding-choice { display:block; padding:1.1rem 1.2rem; border:1px solid var(--border); border-radius:var(--radius); background:var(--raised); text-decoration:none; color:inherit; transition:border-color .18s var(--ease), transform .18s var(--ease); }
-.onboarding-choice:hover { border-color:var(--accent); transform:translateY(-2px); }
+.onboarding-choice { display:block; padding:1.1rem 1.2rem; border:1px solid var(--border); border-radius:var(--radius); background:var(--raised); text-decoration:none; color:inherit; transition:border-color .18s var(--ease); }
+.onboarding-choice:hover { border-color:var(--accent); }
 .onboarding-choice h2 { margin:0 0 .25rem; font-size:1.05rem; }
 .onboarding-choice p { margin:0; color:var(--text-dim); font-size:.92rem; }
 .onboarding-choice--quiet { background:var(--bg-input); }
@@ -1598,9 +1558,8 @@ html.reveal-on :where(
   .table tbody tr
 ) {
   opacity: 0;
-  /* The standalone `translate` property, not `transform` — the cards and steps
-     use `transform` for their hover lift, and the revealed state would win on
-     specificity and kill it. These two compose instead of fighting. */
+  /* The standalone `translate` property keeps the entrance effect separate
+     from transforms used by other components. */
   translate: 0 18px;
   /* Fast enough not to feel sluggish on a long page, slow enough to read as
      deliberate. The movement outlasts the fade slightly. */
@@ -1680,7 +1639,7 @@ html.reveal-on .footer { animation: botfolio-fade-in 1s var(--ease-out) both; }
               color .2s var(--ease), border-color .2s var(--ease);
 }
 .to-top.is-visible { opacity: 1; transform: none; }
-.to-top:hover { color: var(--accent); border-color: var(--accent); transform: translateY(-2px); }
+.to-top:hover { color: var(--accent); border-color: var(--accent); }
 .to-top:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .to-top svg { width: 20px; height: 20px; }
 
@@ -1940,9 +1899,9 @@ html.reveal-on .footer { animation: botfolio-fade-in 1s var(--ease-out) both; }
   border: 1px solid var(--border); border-radius: 50%;
   background: #05070a; color: var(--text);
   font-size: 1.15rem; line-height: 1; cursor: pointer;
-  transition: border-color .2s var(--ease), transform .2s var(--ease);
+  transition: border-color .2s var(--ease), background .2s var(--ease);
 }
-.dotw-arrow:hover { border-color: var(--accent); transform: translateY(-2px); }
+.dotw-arrow:hover { border-color: var(--accent); background: #111820; }
 .dotw-arrow:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 /* A lone award has nothing to rotate: sit it still, centred, caption showing. */
@@ -1977,8 +1936,8 @@ html.reveal-on .footer { animation: botfolio-fade-in 1s var(--ease-out) both; }
 .founding-premium__progress strong { color:#ffe39a; font-size:1.2rem; }
 .founding-list { margin-top:2rem; }
 .founding-list ol { list-style:none; padding:0; margin:0; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:.9rem; }
-.founding-list li { display:flex; align-items:center; gap:1rem; min-width:0; padding:1rem 1.1rem; border:1px solid rgba(229,184,79,.38); border-radius:16px; background:linear-gradient(135deg,rgba(255,225,133,.1),rgba(255,255,255,.025)); box-shadow:0 10px 28px rgba(0,0,0,.2),0 1px 0 rgba(255,246,211,.09) inset; transition:transform .2s var(--ease-out),border-color .2s var(--ease),box-shadow .2s var(--ease); }
-.founding-list li:hover { transform:translateY(-2px); border-color:#f2cb68; box-shadow:0 14px 34px rgba(0,0,0,.3),0 0 24px rgba(229,184,79,.13); }
+.founding-list li { display:flex; align-items:center; gap:1rem; min-width:0; padding:1rem 1.1rem; border:1px solid rgba(229,184,79,.38); border-radius:16px; background:linear-gradient(135deg,rgba(255,225,133,.1),rgba(255,255,255,.025)); box-shadow:0 10px 28px rgba(0,0,0,.2),0 1px 0 rgba(255,246,211,.09) inset; transition:border-color .2s var(--ease); }
+.founding-list li:hover { border-color:#f2cb68; }
 .founding-list a { display:grid; min-width:0; color:#fff8df; text-decoration:none; }
 .founding-list a small { color:#c8a95c; font-size:.66rem; font-weight:800; letter-spacing:.11em; text-transform:uppercase; }
 .founding-list a strong { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
@@ -1987,7 +1946,7 @@ html.reveal-on .footer { animation: botfolio-fade-in 1s var(--ease-out) both; }
 .founding-confetti i { position:absolute; top:-24px; left:var(--confetti-x); width:9px; height:17px; border-radius:2px; background:var(--confetti-colour); box-shadow:0 0 7px rgba(255,212,92,.45); animation:founding-confetti-fall var(--confetti-duration) cubic-bezier(.16,.7,.35,1) var(--confetti-delay) forwards; }
 @keyframes founding-confetti-fall { to { translate:var(--confetti-drift) 110vh; rotate:720deg; opacity:.15; } }
 @media (max-width:720px) { .founding-list ol { grid-template-columns:1fr; } .founding-premium__progress { align-items:center; flex-direction:column; gap:.1rem; } }
-@media (prefers-reduced-motion:reduce) { .founding-confetti { display:none; } .founding-list li { transition:none; } .founding-list li:hover { transform:none; } }
+@media (prefers-reduced-motion:reduce) { .founding-confetti { display:none; } .founding-list li { transition:none; } }
 
 .checkbox-chips .chip {
   position:relative;
