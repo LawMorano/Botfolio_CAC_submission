@@ -75,7 +75,6 @@ def lessons_for(platform):
              "I identified controlling dimensions and persistent relationships.",
              "I predicted the effect of editing an early value."),
             ("parametric", "constraint", "feature", "design intent", "dependency"),
-            media=("Needed asset: annotated dependency diagram for a simple bracket; not yet available.",),
         ),
         _lesson(
             "workspace-navigation", "Navigate and organize the workspace",
@@ -104,7 +103,6 @@ def lessons_for(platform):
              "Mistake: changing displayed units after entering unexplained numbers. Recovery: confirm units first, then inspect every existing dimension."),
             "Add a naming prefix your team could use for practice files, then explain how production designs would differ.",
             ("My workspace and modeling context are named.", "I confirmed units.", "I located the model organization and feature history.", "I can control and reset the camera view."),
-            media=(f"Needed asset: labeled {product} workspace screenshot; not yet available.",),
         ),
         _lesson(
             "fully-defined-sketch", "Create a fully defined base sketch",
@@ -127,7 +125,6 @@ def lessons_for(platform):
             "Change the body width while holding primary hole spacing constant. Confirm symmetry and explain which edge offsets changed.",
             ("The profile uses a deliberate origin.", "Construction geometry does not create solid regions.", "The primary holes remain symmetric.", "The sketch is fully constrained."),
             specifications=("Selected fastener clearance-hole diameter", "Required primary hole spacing", "Minimum desired material around each hole"),
-            media=("Needed asset: under-constrained versus fully constrained sketch comparison; not yet available.",),
         ),
         _lesson(
             "part-features", "Turn the sketch into a part",
@@ -172,7 +169,6 @@ def lessons_for(platform):
              "Mistake: omitting units from an expression. Recovery: confirm each named value has the intended length unit."),
             "Create a safe narrow and wide bracket configuration. Record the first limit that makes a hole too close to an edge.",
             (f"Width, thickness, and hole spacing use named {parameter_plural}.", "Each control was tested independently.", "The model rebuilds and remains symmetric.", "I recorded a practical configuration limit."),
-            media=(f"Needed asset: {product} parameter editor example; not yet available.",),
         ),
         _lesson(
             "inspect-communicate", "Inspect, revise, and communicate",
@@ -195,7 +191,6 @@ def lessons_for(platform):
             CHALLENGE,
             ("I measured the finished geometry.", "I checked units and minimum material around holes.", "Important features are named.", "I completed and explained the second-pattern revision.", "I documented a clear view and intended export details."),
             specifications=("Selected fastener diameter", "Team minimum edge distance or material rule", "Intended fabrication or exchange format"),
-            media=("Needed asset: final bracket checkpoint image; not yet available.",),
         ),
     )
 

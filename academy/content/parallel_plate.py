@@ -88,7 +88,6 @@ def lessons_for(platform):
             ("Mistake: copying dimensions from another robot. Recovery: replace them with selected-hardware data and cite the source.", "Mistake: treating the legal robot limit as the subsystem target. Recovery: document the smaller envelope allocated by the team.", "Mistake: hiding unknowns. Recovery: label them provisional and add a verification owner or date."),
             "Reduce the allocated width by a small, realistic amount for another subsystem. Identify which controls and risks change.",
             ("The design brief is measurable.", "All required hardware fields are recorded.", "Unknowns are provisional.", "Named controls drive the envelope.", "Clearance zones are visible."),
-            media=("Needed asset: drivetrain specification-table example; not yet available.",),
         ),
         _lesson(
             "layout", "Create the master layout sketch",
@@ -109,7 +108,6 @@ def lessons_for(platform):
             ("Mistake: dimensioning mirrored wheel centers separately. Recovery: use symmetry or mirror relationships around a centerline.", "Mistake: drawing only ideal axes. Recovery: add full wheel and motor envelopes.", "Mistake: constraining details to projected edges that may disappear. Recovery: reference stable datums and master geometry."),
             "Increase the required front clearance for an intake. Rebalance axle positions and explain the resulting wheelbase tradeoff.",
             ("Datums are origin-based.", "Wheel locations are symmetric.", "Hardware envelopes are visible.", "Plate and service zones are represented.", "The layout passes a parameter-change test."),
-            media=("Needed asset: annotated master-layout checkpoint image; not yet available.",),
         ),
         _lesson(
             "plates", "Model the two drivetrain plates",
@@ -150,7 +148,6 @@ def lessons_for(platform):
             ("Mistake: using nominal bearing diameter as a universal finished fit. Recovery: document material, process, and intended fit before final sizing.", "Mistake: modeling mounting holes without the motor body. Recovery: add its verified envelope and connector clearance.", "Mistake: mirroring an intentionally handed interface. Recovery: separate shared axes from side-specific features."),
             "Swap to a different selected fastener diameter. Update its clearance and tool envelope, then identify every affected feature.",
             ("Bearing, shaft, wheel, and motor references are traceable.", "Interfaces align across plates.", "Fasteners are installable and removable.", "Material checks are recorded.", "Side-specific features are intentional."),
-            media=("Needed asset: interface stack-up and tool-access diagram; not yet available.",),
         ),
         _lesson(
             "assembly", "Assemble, constrain, inspect, and review the drivetrain",
@@ -171,7 +168,6 @@ def lessons_for(platform):
             ("Mistake: fixing every component until the assembly appears stable. Recovery: retain only one base reference and rebuild relationships by function.", "Mistake: assuming free rotation proves clearance. Recovery: inspect the full wheel width and fastener stack through its swept space.", "Mistake: reporting only 'no interference.' Recovery: record the tested configuration, tightest clearance, and unresolved assumptions."),
             CHALLENGE,
             ("Fixed and rotating relationships match physical intent.", "Wheel motion is verified.", "Internal interfaces were sectioned and checked.", "The service sequence is documented.", "The wider-wheel revision and tightest clearance are explained."),
-            media=("Needed asset: final assembly checkpoint and section-view images; not yet available.",),
         ),
     )
 
