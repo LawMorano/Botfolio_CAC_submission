@@ -12,17 +12,17 @@
 # The WSGI server. Flask's built-in server is single-threaded and explicitly
 # not for production — it handles one request at a time, so one person
 # downloading a 350 MB model blocks everyone else.
-gunicorn>=21.2
+gunicorn>=26.2.0
 
 # S3 uploads (infra/storage.py). Without this, uploads stay on the container's
 # disk and are deleted on every redeploy.
-boto3>=1.34
+boto3>=1.43.119
 
 # Postgres, for RDS or Railway's plugin (infra/database.py). psycopg 3 is
 # preferred; infra/database.py falls back to psycopg2 if that is what is
 # installed instead.
-psycopg[binary]>=3.1
+psycopg[binary]>=3.3.6
 
 # Shared cache and rate-limit counters across containers (infra/cache.py,
 # infra/ratelimit.py). Only needed when running more than one instance.
-redis>=5.0
+redis>=8.1.0
